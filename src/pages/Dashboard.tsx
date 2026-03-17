@@ -1,29 +1,35 @@
 import { useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { BarChart3, ArrowLeft, FileDown } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { BarChart3, ArrowLeft, FileDown, Presentation, FileText, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FileUpload from "@/components/dashboard/FileUpload";
 import DataPreview from "@/components/dashboard/DataPreview";
 import PromptBar from "@/components/dashboard/PromptBar";
 import ChartCard from "@/components/dashboard/ChartCard";
 import VisualPicker from "@/components/dashboard/VisualPicker";
+import SummaryPanel from "@/components/dashboard/SummaryPanel";
 import type { ParsedData } from "@/lib/data-processing";
 import type { ChartConfig, ChartType } from "@/lib/chart-types";
 import { interpretPrompt, createFromType } from "@/lib/local-ai";
+import { generateSummary } from "@/lib/summarize";
+import { exportToPPTX } from "@/lib/export-pptx";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [data, setData] = useState<ParsedData | null>(null);
   const [fileName, setFileName] = useState("");
   const [charts, setCharts] = useState<ChartConfig[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [summaryText, setSummaryText] = useState("");
 
   const handleDataLoaded = useCallback((parsed: ParsedData, name: string) => {
     setData(parsed);
     setFileName(name);
     setCharts([]);
+    setSummaryText("");
   }, []);
 
   const handlePrompt = useCallback(
@@ -32,6 +38,26 @@ export default function Dashboard() {
       setIsProcessing(true);
       try {
         await new Promise((r) => setTimeout(r, 400));
+
+        // Check for summary/insight requests
+        const p = prompt.toLowerCase();
+        if (p.includes("summar") || p.includes("insight") || p.includes("analysis") || p.includes("recommend") || p.includes("trend") && p.includes("detail")) {
+          const summary = generateSummary(charts, data);
+          setSummaryText(summary);
+          toast.success("Summary generated!");
+          setIsProcessing(false);
+          return;
+        }
+
+        // Check for PPTX request
+        if (p.includes("ppt") || p.includes("presentation") || p.includes("power point") || p.includes("powerpoint") || p.includes("slide")) {
+          toast.info("Generating PowerPoint…");
+          await exportToPPTX(charts, summaryText || generateSummary(charts, data));
+          toast.success("PowerPoint exported!");
+          setIsProcessing(false);
+          return;
+        }
+
         const config = interpretPrompt(prompt, data.columns, data.rows);
         setCharts((prev) => [config, ...prev]);
         toast.success(`Generated: ${config.title}`);
@@ -41,7 +67,7 @@ export default function Dashboard() {
         setIsProcessing(false);
       }
     },
-    [data]
+    [data, charts, summaryText]
   );
 
   const handleVisualPick = useCallback(
@@ -62,29 +88,70 @@ export default function Dashboard() {
     setCharts((prev) => prev.filter((c) => c.id !== id));
   }, []);
 
+  const handleGenerateSummary = () => {
+    if (!data) return;
+    const summary = generateSummary(charts, data);
+    setSummaryText(summary);
+    toast.success("Summary generated!");
+  };
+
   const exportDashboardPDF = async () => {
-    const el = document.getElementById("chart-grid");
-    if (!el) return;
+    const chartEls = document.querySelectorAll("#chart-grid > div");
+    if (chartEls.length === 0) return;
     toast.info("Generating PDF…");
     try {
       const { default: html2canvas } = await import("html2canvas");
-      const canvas = await html2canvas(el, {
-        backgroundColor: "#ffffff",
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        windowWidth: el.scrollWidth,
-        windowHeight: el.scrollHeight,
-      });
-      const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({ orientation: "landscape" });
-      const width = pdf.internal.pageSize.getWidth();
-      const height = (canvas.height * width) / canvas.width;
-      pdf.addImage(imgData, "PNG", 0, 0, width, height);
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+      const usableW = (pageW - margin * 3) / 2;
+      const usableH = (pageH - margin * 3) / 2;
+      let col = 0;
+      let row = 0;
+
+      for (let i = 0; i < chartEls.length; i++) {
+        if (i > 0 && col === 0 && row === 0) {
+          pdf.addPage();
+        }
+
+        const el = chartEls[i] as HTMLElement;
+        const canvas = await html2canvas(el, {
+          backgroundColor: "#ffffff",
+          scale: 2,
+          useCORS: true,
+          logging: false,
+        });
+
+        const imgData = canvas.toDataURL("image/png");
+        const imgRatio = canvas.width / canvas.height;
+        let w = usableW;
+        let h = w / imgRatio;
+        if (h > usableH) { h = usableH; w = h * imgRatio; }
+
+        const x = margin + col * (usableW + margin);
+        const y = margin + row * (usableH + margin);
+        pdf.addImage(imgData, "PNG", x, y, w, h);
+
+        col++;
+        if (col >= 2) { col = 0; row++; }
+        if (row >= 2) { col = 0; row = 0; }
+      }
+
       pdf.save("dashboard.pdf");
-      toast.success("PDF exported!");
+      toast.success("PDF exported with all visuals!");
     } catch {
       toast.error("PDF export failed. Try again.");
+    }
+  };
+
+  const handleExportPPTX = async () => {
+    toast.info("Generating PowerPoint…");
+    try {
+      await exportToPPTX(charts, summaryText || (data ? generateSummary(charts, data) : ""));
+      toast.success("PowerPoint exported!");
+    } catch {
+      toast.error("PowerPoint export failed.");
     }
   };
 
@@ -99,12 +166,28 @@ export default function Dashboard() {
             <BarChart3 className="h-5 w-5 text-primary" />
             <span className="font-semibold text-foreground">DataLens</span>
           </div>
-          {charts.length > 0 && (
-            <Button variant="outline" size="sm" onClick={exportDashboardPDF}>
-              <FileDown className="h-4 w-4 mr-1" />
-              Export PDF
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/projects")}>
+              <FolderOpen className="h-4 w-4 mr-1" />
+              Projects
             </Button>
-          )}
+            {charts.length > 0 && (
+              <>
+                <Button variant="ghost" size="sm" onClick={handleGenerateSummary}>
+                  <FileText className="h-4 w-4 mr-1" />
+                  Summary
+                </Button>
+                <Button variant="ghost" size="sm" onClick={handleExportPPTX}>
+                  <Presentation className="h-4 w-4 mr-1" />
+                  PPTX
+                </Button>
+                <Button variant="outline" size="sm" onClick={exportDashboardPDF}>
+                  <FileDown className="h-4 w-4 mr-1" />
+                  Export PDF
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
@@ -119,6 +202,8 @@ export default function Dashboard() {
             <VisualPicker onSelect={handleVisualPick} />
           </>
         )}
+
+        {summaryText && <SummaryPanel summaryText={summaryText} />}
 
         {charts.length > 0 && (
           <div id="chart-grid" className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">

@@ -14,6 +14,15 @@ function fuzzyMatch(input: string, candidates: string[]): string | undefined {
 
 function detectChartType(prompt: string): ChartType {
   const p = prompt.toLowerCase();
+  if (p.includes("stacked column")) return "stacked-column";
+  if (p.includes("stacked bar")) return "stacked-bar";
+  if (p.includes("clustered column")) return "clustered-column";
+  if (p.includes("clustered bar")) return "clustered-bar";
+  if (p.includes("decomposition") || p.includes("decomp")) return "decomposition-tree";
+  if (p.includes("narrative") || p.includes("story")) return "narrative";
+  if (p.includes("slicer") || p.includes("filter")) return "slicer";
+  if (p.includes("matrix")) return "matrix";
+  if (p.includes("card") && !p.includes("kpi")) return "card";
   if (p.includes("pie") || p.includes("donut") || p.includes("distribution") || p.includes("proportion")) return "pie";
   if (p.includes("line") || p.includes("trend") || p.includes("over time") || p.includes("timeline")) return "line";
   if (p.includes("scatter") || p.includes("correlation") || p.includes("vs")) return "scatter";
@@ -217,12 +226,18 @@ export function interpretPrompt(
 
   const title = prompt.charAt(0).toUpperCase() + prompt.slice(1);
 
+  // For clustered/stacked types, include multiple numeric keys
+  const yKeys = (chartType.includes("clustered") || chartType.includes("stacked"))
+    ? numericCols.slice(0, Math.min(3, numericCols.length))
+    : undefined;
+
   const cfg: ChartConfig = {
     id: generateId(),
     type: chartType,
     title,
     xKey,
     yKey,
+    yKeys,
     labelKey: xKey,
     valueKey: yKey,
     data: chartData,
@@ -254,6 +269,15 @@ export function createFromType(
     waterfall: "Create a waterfall chart",
     gauge: "Create a gauge chart",
     combo: "Create a combo chart",
+    "clustered-column": "Create a clustered column chart",
+    "clustered-bar": "Create a clustered bar chart",
+    "stacked-column": "Create a stacked column chart",
+    "stacked-bar": "Create a stacked bar chart",
+    matrix: "Show data as matrix table",
+    card: "Show a card KPI",
+    narrative: "Create a narrative story",
+    slicer: "Create a slicer filter",
+    "decomposition-tree": "Create a decomposition tree",
   };
   const prompt = typePromptMap[type] || "Create a bar chart";
   return interpretPrompt(prompt, columns, rows);
