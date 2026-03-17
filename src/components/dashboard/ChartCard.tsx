@@ -4,7 +4,9 @@ import type { ChartConfig } from "@/lib/chart-types";
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Legend,
+  Tooltip, ResponsiveContainer, Legend, AreaChart, Area,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  ComposedChart,
 } from "recharts";
 import { useRef, useState } from "react";
 
@@ -28,106 +30,172 @@ export default function ChartCard({ config, onRemove }: ChartCardProps) {
 
   const handleExportPNG = async () => {
     if (!ref.current) return;
-    // Use SVG-based export for recharts
-    const svgEl = ref.current.querySelector(".recharts-wrapper svg") as SVGElement | null;
-    if (svgEl) {
-      const svgData = new XMLSerializer().serializeToString(svgEl);
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      const img = new Image();
-      const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-      const url = URL.createObjectURL(svgBlob);
-      img.onload = () => {
-        canvas.width = img.width * 2;
-        canvas.height = img.height * 2;
-        ctx!.fillStyle = "#ffffff";
-        ctx!.fillRect(0, 0, canvas.width, canvas.height);
-        ctx!.scale(2, 2);
-        ctx!.drawImage(img, 0, 0);
-        URL.revokeObjectURL(url);
-        const link = document.createElement("a");
-        link.download = `${config.title.replace(/\s+/g, "_")}.png`;
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-      };
-      img.src = url;
-    } else {
-      // Fallback for KPI/table: capture the div as text
-      const { default: html2canvas } = await import("html2canvas");
-      const canvas = await html2canvas(ref.current, {
-        backgroundColor: "#ffffff",
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      });
-      const link = document.createElement("a");
-      link.download = `${config.title.replace(/\s+/g, "_")}.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
-    }
+    const { default: html2canvas } = await import("html2canvas");
+    const canvas = await html2canvas(ref.current, {
+      backgroundColor: "#ffffff",
+      scale: 2,
+      useCORS: true,
+      logging: false,
+    });
+    const link = document.createElement("a");
+    link.download = `${config.title.replace(/\s+/g, "_")}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
   };
 
   const renderChart = () => {
-    switch (config.type) {
+    const { type, data, xKey, yKey, yKeys } = config;
+
+    switch (type) {
       case "bar":
         return (
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={config.data}>
+            <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
-              <XAxis dataKey={config.xKey} tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
+              <XAxis dataKey={xKey} tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
               <YAxis tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
               <Tooltip />
-              <Bar dataKey={config.yKey!} fill={COLORS[0]} radius={[4, 4, 0, 0]} />
+              <Bar dataKey={yKey!} fill={COLORS[0]} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         );
+
+      case "clustered-column":
+      case "clustered-bar": {
+        const keys = yKeys?.length ? yKeys : [yKey!];
+        return (
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={data} layout={type === "clustered-bar" ? "vertical" : "horizontal"}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
+              {type === "clustered-bar" ? (
+                <>
+                  <YAxis dataKey={xKey} type="category" tick={{ fontSize: 11 }} stroke="hsl(220, 9%, 46%)" width={80} />
+                  <XAxis type="number" tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
+                </>
+              ) : (
+                <>
+                  <XAxis dataKey={xKey} tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
+                  <YAxis tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
+                </>
+              )}
+              <Tooltip />
+              <Legend />
+              {keys.map((k, i) => (
+                <Bar key={k} dataKey={k} fill={COLORS[i % COLORS.length]} radius={[4, 4, 0, 0]} />
+              ))}
+            </BarChart>
+          </ResponsiveContainer>
+        );
+      }
+
+      case "stacked-column":
+      case "stacked-bar": {
+        const keys = yKeys?.length ? yKeys : [yKey!];
+        return (
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={data} layout={type === "stacked-bar" ? "vertical" : "horizontal"}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
+              {type === "stacked-bar" ? (
+                <>
+                  <YAxis dataKey={xKey} type="category" tick={{ fontSize: 11 }} stroke="hsl(220, 9%, 46%)" width={80} />
+                  <XAxis type="number" tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
+                </>
+              ) : (
+                <>
+                  <XAxis dataKey={xKey} tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
+                  <YAxis tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
+                </>
+              )}
+              <Tooltip />
+              <Legend />
+              {keys.map((k, i) => (
+                <Bar key={k} dataKey={k} fill={COLORS[i % COLORS.length]} stackId="stack" radius={i === keys.length - 1 ? [4, 4, 0, 0] : undefined} />
+              ))}
+            </BarChart>
+          </ResponsiveContainer>
+        );
+      }
+
       case "line":
         return (
           <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={config.data}>
+            <LineChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
-              <XAxis dataKey={config.xKey} tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
+              <XAxis dataKey={xKey} tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
               <YAxis tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
               <Tooltip />
-              <Line type="monotone" dataKey={config.yKey!} stroke={COLORS[0]} strokeWidth={2} dot={{ r: 3 }} />
+              <Line type="monotone" dataKey={yKey!} stroke={COLORS[0]} strokeWidth={2} dot={{ r: 3 }} />
             </LineChart>
           </ResponsiveContainer>
         );
+
+      case "area":
+        return (
+          <ResponsiveContainer width="100%" height={280}>
+            <AreaChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
+              <XAxis dataKey={xKey} tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
+              <YAxis tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
+              <Tooltip />
+              <Area type="monotone" dataKey={yKey!} stroke={COLORS[0]} fill={COLORS[0]} fillOpacity={0.2} />
+            </AreaChart>
+          </ResponsiveContainer>
+        );
+
       case "pie":
         return (
           <ResponsiveContainer width="100%" height={280}>
             <PieChart>
-              <Pie
-                data={config.data}
-                dataKey={config.valueKey!}
-                nameKey={config.labelKey!}
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-              >
-                {config.data.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
+              <Pie data={data} dataKey={config.valueKey!} nameKey={config.labelKey!} cx="50%" cy="50%" outerRadius={100}
+                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                {data.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Pie>
-              <Tooltip />
-              <Legend />
+              <Tooltip /><Legend />
             </PieChart>
           </ResponsiveContainer>
         );
+
       case "scatter":
         return (
           <ResponsiveContainer width="100%" height={280}>
             <ScatterChart>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
-              <XAxis dataKey={config.xKey} tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" name={config.xKey} />
-              <YAxis dataKey={config.yKey} tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" name={config.yKey} />
+              <XAxis dataKey={xKey} tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" name={xKey} />
+              <YAxis dataKey={yKey} tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" name={yKey} />
               <Tooltip cursor={{ strokeDasharray: "3 3" }} />
-              <Scatter data={config.data} fill={COLORS[0]} />
+              <Scatter data={data} fill={COLORS[0]} />
             </ScatterChart>
           </ResponsiveContainer>
         );
+
+      case "radar":
+        return (
+          <ResponsiveContainer width="100%" height={280}>
+            <RadarChart data={data.slice(0, 12)}>
+              <PolarGrid />
+              <PolarAngleAxis dataKey={xKey} tick={{ fontSize: 10 }} />
+              <PolarRadiusAxis tick={{ fontSize: 10 }} />
+              <Radar dataKey={yKey!} stroke={COLORS[0]} fill={COLORS[0]} fillOpacity={0.3} />
+            </RadarChart>
+          </ResponsiveContainer>
+        );
+
+      case "combo":
+        return (
+          <ResponsiveContainer width="100%" height={280}>
+            <ComposedChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
+              <XAxis dataKey={xKey} tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
+              <YAxis tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
+              <Tooltip />
+              <Bar dataKey={yKey!} fill={COLORS[0]} radius={[4, 4, 0, 0]} opacity={0.7} />
+              <Line type="monotone" dataKey={yKey!} stroke={COLORS[1]} strokeWidth={2} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        );
+
       case "kpi":
+      case "card":
         return (
           <div className="flex flex-col items-center justify-center h-[200px] gap-2">
             <p className="text-sm text-muted-foreground">{config.kpiLabel}</p>
@@ -140,7 +208,9 @@ export default function ChartCard({ config, onRemove }: ChartCardProps) {
             )}
           </div>
         );
+
       case "table":
+      case "matrix":
         return (
           <div className="overflow-x-auto max-h-[280px]">
             <table className="w-full text-sm">
@@ -152,7 +222,7 @@ export default function ChartCard({ config, onRemove }: ChartCardProps) {
                 </tr>
               </thead>
               <tbody>
-                {config.data.slice(0, 20).map((row, i) => (
+                {data.slice(0, 20).map((row, i) => (
                   <tr key={i} className="border-b border-border">
                     {(config.columns ?? []).map((col) => (
                       <td key={col} className="px-3 py-1.5 text-muted-foreground">{row[col] != null ? String(row[col]) : "—"}</td>
@@ -163,6 +233,149 @@ export default function ChartCard({ config, onRemove }: ChartCardProps) {
             </table>
           </div>
         );
+
+      case "narrative":
+        return (
+          <div className="p-4 text-sm text-muted-foreground leading-relaxed max-h-[280px] overflow-y-auto">
+            {config.narrativeText || `Analysis of ${config.yKey}: The data contains ${data.length} data points. The values range across multiple categories grouped by ${config.xKey}, showing patterns that can inform business decisions.`}
+          </div>
+        );
+
+      case "slicer":
+        return (
+          <div className="p-4 max-h-[280px] overflow-y-auto">
+            <p className="text-xs text-muted-foreground mb-2">Filter by {config.xKey}:</p>
+            <div className="flex flex-wrap gap-2">
+              {[...new Set(data.map(d => String(d[config.xKey!])))].slice(0, 30).map(val => (
+                <span key={val} className="text-xs px-2.5 py-1 rounded-full border border-border bg-background hover:bg-primary/10 hover:border-primary cursor-pointer transition-colors">
+                  {val}
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+
+      case "decomposition-tree":
+        return (
+          <div className="p-4 max-h-[280px] overflow-y-auto">
+            <p className="text-xs text-muted-foreground mb-3">Decomposition of {config.yKey} by {config.xKey}</p>
+            {data.slice(0, 8).map((row, i) => (
+              <div key={i} className="flex items-center gap-2 mb-1.5">
+                <div className="h-0.5 bg-primary/30" style={{ width: `${12 + i * 8}px` }} />
+                <span className="text-xs text-foreground font-medium">{String(row[config.xKey!])}</span>
+                <span className="text-xs text-muted-foreground">— {Number(row[config.yKey!]).toLocaleString()}</span>
+                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                  <div className="h-full rounded-full" style={{
+                    width: `${Math.min(100, (Number(row[config.yKey!]) / Math.max(...data.map(d => Number(d[config.yKey!]) || 1))) * 100)}%`,
+                    backgroundColor: COLORS[i % COLORS.length],
+                  }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+
+      case "funnel":
+        return (
+          <div className="flex flex-col items-center justify-center h-[280px] px-4 gap-1">
+            {data.slice(0, 6).map((row, i) => {
+              const maxVal = Math.max(...data.slice(0, 6).map(d => Number(d[config.yKey!]) || 1));
+              const pct = (Number(row[config.yKey!]) || 0) / maxVal;
+              return (
+                <div key={i} className="flex items-center gap-2 w-full" style={{ maxWidth: `${60 + pct * 40}%` }}>
+                  <div className="flex-1 text-center py-2 rounded text-xs font-medium text-primary-foreground" style={{ backgroundColor: COLORS[i % COLORS.length] }}>
+                    {String(row[config.xKey!])} — {Number(row[config.yKey!]).toLocaleString()}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+
+      case "treemap":
+        return (
+          <div className="grid grid-cols-3 gap-1 h-[280px] p-2">
+            {data.slice(0, 9).map((row, i) => {
+              const val = Number(row[config.yKey!]) || 1;
+              const maxVal = Math.max(...data.slice(0, 9).map(d => Number(d[config.yKey!]) || 1));
+              return (
+                <div key={i} className="rounded flex flex-col items-center justify-center text-primary-foreground text-xs p-2"
+                  style={{ backgroundColor: COLORS[i % COLORS.length], opacity: 0.5 + (val / maxVal) * 0.5 }}>
+                  <span className="font-medium">{String(row[config.xKey!])}</span>
+                  <span>{val.toLocaleString()}</span>
+                </div>
+              );
+            })}
+          </div>
+        );
+
+      case "histogram":
+        return (
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
+              <XAxis dataKey={xKey} tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
+              <YAxis tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
+              <Tooltip />
+              <Bar dataKey={yKey!} fill={COLORS[0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        );
+
+      case "heatmap":
+        return (
+          <div className="grid gap-1 p-4" style={{ gridTemplateColumns: `repeat(${Math.min(data.length, 8)}, 1fr)` }}>
+            {data.slice(0, 24).map((row, i) => {
+              const val = Number(row[config.yKey!]) || 0;
+              const maxVal = Math.max(...data.map(d => Number(d[config.yKey!]) || 1));
+              const intensity = val / maxVal;
+              return (
+                <div key={i} className="rounded aspect-square flex items-center justify-center text-[10px] text-primary-foreground"
+                  style={{ backgroundColor: `hsl(239, 84%, ${70 - intensity * 40}%)` }} title={`${row[config.xKey!]}: ${val}`}>
+                  {val.toFixed(0)}
+                </div>
+              );
+            })}
+          </div>
+        );
+
+      case "waterfall":
+        return (
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
+              <XAxis dataKey={xKey} tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
+              <YAxis tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
+              <Tooltip />
+              <Bar dataKey={yKey!} fill={COLORS[0]} radius={[4, 4, 0, 0]}>
+                {data.map((row, i) => (
+                  <Cell key={i} fill={Number(row[yKey!]) >= 0 ? COLORS[1] : COLORS[5]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        );
+
+      case "gauge": {
+        const val = data.length > 0 ? Number(data[0][config.yKey!]) || 0 : 0;
+        const maxVal = Math.max(...data.map(d => Number(d[config.yKey!]) || 1));
+        const pct = Math.min(1, val / maxVal);
+        return (
+          <div className="flex flex-col items-center justify-center h-[200px]">
+            <div className="relative w-36 h-20 overflow-hidden">
+              <div className="absolute inset-0 rounded-t-full border-[12px] border-muted" />
+              <div className="absolute inset-0 rounded-t-full border-[12px] border-transparent" style={{
+                borderTopColor: COLORS[0], borderLeftColor: pct > 0.25 ? COLORS[0] : "transparent",
+                borderRightColor: pct > 0.75 ? COLORS[0] : "transparent",
+                transform: `rotate(${-90 + pct * 180}deg)`, transformOrigin: "bottom center",
+              }} />
+            </div>
+            <p className="text-2xl font-bold text-foreground mt-2">{val.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">{(pct * 100).toFixed(0)}% of max</p>
+          </div>
+        );
+      }
+
       default:
         return <p className="text-muted-foreground text-center py-10">Unsupported chart type</p>;
     }
@@ -193,13 +406,7 @@ export default function ChartCard({ config, onRemove }: ChartCardProps) {
             <span className="text-xs font-semibold text-foreground uppercase tracking-wider">
               {showCode === "sql" ? "SQL" : "Python"}
             </span>
-            <button
-              onClick={() => {
-                const code = showCode === "sql" ? config.sqlCode! : config.pythonCode!;
-                navigator.clipboard.writeText(code);
-              }}
-              className="text-xs text-primary hover:underline"
-            >
+            <button onClick={() => navigator.clipboard.writeText(showCode === "sql" ? config.sqlCode! : config.pythonCode!)} className="text-xs text-primary hover:underline">
               Copy
             </button>
           </div>
