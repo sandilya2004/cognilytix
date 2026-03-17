@@ -226,12 +226,18 @@ export function interpretPrompt(
 
   const title = prompt.charAt(0).toUpperCase() + prompt.slice(1);
 
+  // For clustered/stacked types, include multiple numeric keys
+  const yKeys = (chartType.includes("clustered") || chartType.includes("stacked"))
+    ? numericCols.slice(0, Math.min(3, numericCols.length))
+    : undefined;
+
   const cfg: ChartConfig = {
     id: generateId(),
     type: chartType,
     title,
     xKey,
     yKey,
+    yKeys,
     labelKey: xKey,
     valueKey: yKey,
     data: chartData,
