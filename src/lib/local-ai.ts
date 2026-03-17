@@ -14,6 +14,15 @@ function fuzzyMatch(input: string, candidates: string[]): string | undefined {
 
 function detectChartType(prompt: string): ChartType {
   const p = prompt.toLowerCase();
+  if (p.includes("stacked column")) return "stacked-column";
+  if (p.includes("stacked bar")) return "stacked-bar";
+  if (p.includes("clustered column")) return "clustered-column";
+  if (p.includes("clustered bar")) return "clustered-bar";
+  if (p.includes("decomposition") || p.includes("decomp")) return "decomposition-tree";
+  if (p.includes("narrative") || p.includes("story")) return "narrative";
+  if (p.includes("slicer") || p.includes("filter")) return "slicer";
+  if (p.includes("matrix")) return "matrix";
+  if (p.includes("card") && !p.includes("kpi")) return "card";
   if (p.includes("pie") || p.includes("donut") || p.includes("distribution") || p.includes("proportion")) return "pie";
   if (p.includes("line") || p.includes("trend") || p.includes("over time") || p.includes("timeline")) return "line";
   if (p.includes("scatter") || p.includes("correlation") || p.includes("vs")) return "scatter";
