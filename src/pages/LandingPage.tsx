@@ -48,10 +48,15 @@ export default function LandingPage() {
             <BarChart3 className="h-6 w-6 text-primary" />
             <span className="text-lg font-semibold text-foreground">DataLens</span>
           </div>
-          <Button variant="hero" size="lg" onClick={() => navigate("/dashboard")}>
-            Start Analyzing
-            <ArrowRight className="ml-1 h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/projects")}>
+              My Projects
+            </Button>
+            <Button variant="hero" size="lg" onClick={() => navigate("/dashboard")}>
+              Start Analyzing
+              <ArrowRight className="ml-1 h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </nav>
 
