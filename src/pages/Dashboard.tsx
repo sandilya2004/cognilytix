@@ -6,12 +6,12 @@ import FileUpload from "@/components/dashboard/FileUpload";
 import DataPreview from "@/components/dashboard/DataPreview";
 import PromptBar from "@/components/dashboard/PromptBar";
 import ChartCard from "@/components/dashboard/ChartCard";
+import VisualPicker from "@/components/dashboard/VisualPicker";
 import type { ParsedData } from "@/lib/data-processing";
-import type { ChartConfig } from "@/lib/chart-types";
-import { interpretPrompt } from "@/lib/local-ai";
+import type { ChartConfig, ChartType } from "@/lib/chart-types";
+import { interpretPrompt, createFromType } from "@/lib/local-ai";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -31,7 +31,6 @@ export default function Dashboard() {
       if (!data) return;
       setIsProcessing(true);
       try {
-        // Small delay to show loading state
         await new Promise((r) => setTimeout(r, 400));
         const config = interpretPrompt(prompt, data.columns, data.rows);
         setCharts((prev) => [config, ...prev]);
@@ -45,6 +44,20 @@ export default function Dashboard() {
     [data]
   );
 
+  const handleVisualPick = useCallback(
+    (type: ChartType) => {
+      if (!data) return;
+      try {
+        const config = createFromType(type, data.columns, data.rows);
+        setCharts((prev) => [config, ...prev]);
+        toast.success(`Generated: ${config.title}`);
+      } catch {
+        toast.error("Could not create this visualization with current data.");
+      }
+    },
+    [data]
+  );
+
   const removeChart = useCallback((id: string) => {
     setCharts((prev) => prev.filter((c) => c.id !== id));
   }, []);
@@ -53,19 +66,30 @@ export default function Dashboard() {
     const el = document.getElementById("chart-grid");
     if (!el) return;
     toast.info("Generating PDF…");
-    const canvas = await html2canvas(el, { backgroundColor: "#ffffff", scale: 2 });
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF({ orientation: "landscape" });
-    const width = pdf.internal.pageSize.getWidth();
-    const height = (canvas.height * width) / canvas.width;
-    pdf.addImage(imgData, "PNG", 0, 0, width, height);
-    pdf.save("dashboard.pdf");
-    toast.success("PDF exported!");
+    try {
+      const { default: html2canvas } = await import("html2canvas");
+      const canvas = await html2canvas(el, {
+        backgroundColor: "#ffffff",
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        windowWidth: el.scrollWidth,
+        windowHeight: el.scrollHeight,
+      });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ orientation: "landscape" });
+      const width = pdf.internal.pageSize.getWidth();
+      const height = (canvas.height * width) / canvas.width;
+      pdf.addImage(imgData, "PNG", 0, 0, width, height);
+      pdf.save("dashboard.pdf");
+      toast.success("PDF exported!");
+    } catch {
+      toast.error("PDF export failed. Try again.");
+    }
   };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container flex h-14 items-center justify-between">
           <div className="flex items-center gap-3">
@@ -85,17 +109,17 @@ export default function Dashboard() {
       </header>
 
       <main className="container py-8 space-y-6">
-        {/* Prompt Bar */}
         <PromptBar onSubmit={handlePrompt} isLoading={isProcessing} disabled={!data} />
 
-        {/* Upload / Preview */}
         {!data ? (
           <FileUpload onDataLoaded={handleDataLoaded} />
         ) : (
-          <DataPreview data={data} fileName={fileName} />
+          <>
+            <DataPreview data={data} fileName={fileName} />
+            <VisualPicker onSelect={handleVisualPick} />
+          </>
         )}
 
-        {/* Charts Grid */}
         {charts.length > 0 && (
           <div id="chart-grid" className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {charts.map((chart) => (
@@ -104,7 +128,6 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Shimmer loading placeholders */}
         {isProcessing && (
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {[1, 2].map((i) => (
@@ -116,12 +139,10 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Empty state */}
         {data && charts.length === 0 && !isProcessing && (
           <div className="text-center py-16">
             <p className="text-muted-foreground">
-              Your visualizations will appear here. Try a prompt like{" "}
-              <span className="text-primary font-medium">"Create a bar chart"</span>
+              Your visualizations will appear here. Try a prompt or click a visual type above.
             </p>
           </div>
         )}

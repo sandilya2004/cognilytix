@@ -1,4 +1,4 @@
-import { X, Download, TrendingUp, TrendingDown } from "lucide-react";
+import { X, Download, TrendingUp, TrendingDown, Code, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ChartConfig } from "@/lib/chart-types";
 import {
@@ -6,8 +6,7 @@ import {
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
-import html2canvas from "html2canvas";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 const COLORS = [
   "hsl(239, 84%, 67%)",
@@ -25,14 +24,47 @@ interface ChartCardProps {
 
 export default function ChartCard({ config, onRemove }: ChartCardProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const [showCode, setShowCode] = useState<"none" | "sql" | "python">("none");
 
   const handleExportPNG = async () => {
     if (!ref.current) return;
-    const canvas = await html2canvas(ref.current, { backgroundColor: "#ffffff" });
-    const link = document.createElement("a");
-    link.download = `${config.title.replace(/\s+/g, "_")}.png`;
-    link.href = canvas.toDataURL();
-    link.click();
+    // Use SVG-based export for recharts
+    const svgEl = ref.current.querySelector(".recharts-wrapper svg") as SVGElement | null;
+    if (svgEl) {
+      const svgData = new XMLSerializer().serializeToString(svgEl);
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      const img = new Image();
+      const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(svgBlob);
+      img.onload = () => {
+        canvas.width = img.width * 2;
+        canvas.height = img.height * 2;
+        ctx!.fillStyle = "#ffffff";
+        ctx!.fillRect(0, 0, canvas.width, canvas.height);
+        ctx!.scale(2, 2);
+        ctx!.drawImage(img, 0, 0);
+        URL.revokeObjectURL(url);
+        const link = document.createElement("a");
+        link.download = `${config.title.replace(/\s+/g, "_")}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      };
+      img.src = url;
+    } else {
+      // Fallback for KPI/table: capture the div as text
+      const { default: html2canvas } = await import("html2canvas");
+      const canvas = await html2canvas(ref.current, {
+        backgroundColor: "#ffffff",
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+      const link = document.createElement("a");
+      link.download = `${config.title.replace(/\s+/g, "_")}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
   };
 
   const renderChart = () => {
@@ -141,6 +173,12 @@ export default function ChartCard({ config, onRemove }: ChartCardProps) {
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <h4 className="font-medium text-foreground text-sm">{config.title}</h4>
         <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowCode(showCode === "sql" ? "none" : "sql")} title="SQL Code">
+            <Database className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowCode(showCode === "python" ? "none" : "python")} title="Python Code">
+            <Code className="h-3.5 w-3.5" />
+          </Button>
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleExportPNG} title="Export as PNG">
             <Download className="h-3.5 w-3.5" />
           </Button>
@@ -149,6 +187,27 @@ export default function ChartCard({ config, onRemove }: ChartCardProps) {
           </Button>
         </div>
       </div>
+      {showCode !== "none" && config.sqlCode && config.pythonCode && (
+        <div className="border-b border-border bg-muted/30 px-4 py-3">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs font-semibold text-foreground uppercase tracking-wider">
+              {showCode === "sql" ? "SQL" : "Python"}
+            </span>
+            <button
+              onClick={() => {
+                const code = showCode === "sql" ? config.sqlCode! : config.pythonCode!;
+                navigator.clipboard.writeText(code);
+              }}
+              className="text-xs text-primary hover:underline"
+            >
+              Copy
+            </button>
+          </div>
+          <pre className="text-xs text-muted-foreground bg-background rounded p-3 overflow-x-auto whitespace-pre-wrap font-mono">
+            {showCode === "sql" ? config.sqlCode : config.pythonCode}
+          </pre>
+        </div>
+      )}
       <div className="p-4">{renderChart()}</div>
     </div>
   );
