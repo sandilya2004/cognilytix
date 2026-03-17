@@ -1,12 +1,15 @@
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import type { ParsedData } from "@/lib/data-processing";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface DataPreviewProps {
   data: ParsedData;
   fileName: string;
 }
+
+const PAGE_SIZE = 10;
 
 const typeBadgeClass: Record<string, string> = {
   number: "bg-primary/10 text-primary border-primary/20",
@@ -17,7 +20,11 @@ const typeBadgeClass: Record<string, string> = {
 
 export default function DataPreview({ data, fileName }: DataPreviewProps) {
   const [expanded, setExpanded] = useState(true);
-  const previewRows = data.rows.slice(0, 10);
+  const [page, setPage] = useState(0);
+
+  const totalPages = Math.ceil(data.rows.length / PAGE_SIZE);
+  const start = page * PAGE_SIZE;
+  const pageRows = data.rows.slice(start, start + PAGE_SIZE);
 
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
@@ -56,8 +63,8 @@ export default function DataPreview({ data, fileName }: DataPreviewProps) {
               </tr>
             </thead>
             <tbody>
-              {previewRows.map((row, i) => (
-                <tr key={i} className="border-t border-border hover:bg-muted/20 transition-colors">
+              {pageRows.map((row, i) => (
+                <tr key={start + i} className="border-t border-border hover:bg-muted/20 transition-colors">
                   {data.columns.map((col) => (
                     <td key={col.name} className="px-4 py-2 text-muted-foreground whitespace-nowrap max-w-[200px] truncate">
                       {row[col.name] != null ? String(row[col.name]) : "—"}
@@ -67,9 +74,36 @@ export default function DataPreview({ data, fileName }: DataPreviewProps) {
               ))}
             </tbody>
           </table>
-          {data.rows.length > 10 && (
-            <div className="px-4 py-2 text-xs text-muted-foreground border-t border-border">
-              Showing first 10 of {data.rows.length} rows
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-2.5 border-t border-border">
+              <span className="text-xs text-muted-foreground">
+                Rows {start + 1}–{Math.min(start + PAGE_SIZE, data.rows.length)} of {data.rows.length}
+              </span>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  disabled={page === 0}
+                  onClick={() => setPage(page - 1)}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-xs text-muted-foreground px-2">
+                  Page {page + 1} of {totalPages}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  disabled={page >= totalPages - 1}
+                  onClick={() => setPage(page + 1)}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           )}
         </div>

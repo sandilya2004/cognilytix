@@ -2,17 +2,10 @@ import type { DataColumn } from "./data-processing";
 import type { ChartConfig, ChartType } from "./chart-types";
 import { generateId } from "./chart-types";
 
-/**
- * Local prompt interpreter — parses natural language into chart configs
- * without requiring an AI backend. Works as a fallback.
- */
-
 function fuzzyMatch(input: string, candidates: string[]): string | undefined {
   const lower = input.toLowerCase();
-  // exact
   const exact = candidates.find((c) => lower.includes(c.toLowerCase()));
   if (exact) return exact;
-  // partial
   return candidates.find((c) => {
     const words = c.toLowerCase().split(/[\s_]+/);
     return words.some((w) => w.length > 2 && lower.includes(w));
@@ -24,6 +17,15 @@ function detectChartType(prompt: string): ChartType {
   if (p.includes("pie") || p.includes("donut") || p.includes("distribution") || p.includes("proportion")) return "pie";
   if (p.includes("line") || p.includes("trend") || p.includes("over time") || p.includes("timeline")) return "line";
   if (p.includes("scatter") || p.includes("correlation") || p.includes("vs")) return "scatter";
+  if (p.includes("area")) return "area";
+  if (p.includes("radar") || p.includes("spider")) return "radar";
+  if (p.includes("funnel")) return "funnel";
+  if (p.includes("treemap") || p.includes("tree map")) return "treemap";
+  if (p.includes("histogram")) return "histogram";
+  if (p.includes("heatmap") || p.includes("heat map")) return "heatmap";
+  if (p.includes("waterfall")) return "waterfall";
+  if (p.includes("gauge") || p.includes("meter")) return "gauge";
+  if (p.includes("combo") || p.includes("combined")) return "combo";
   if (p.includes("kpi") || p.includes("total") || p.includes("average") || p.includes("sum") || p.includes("count")) return "kpi";
   if (p.includes("table") || p.includes("summary") || p.includes("top")) return "table";
   return "bar";
@@ -50,6 +52,73 @@ function aggregateData(
   }));
 }
 
+function generateSQL(config: ChartConfig, tableName: string = "dataset"): string {
+  const { type, xKey, yKey, kpiLabel } = config;
+
+  if (type === "kpi") {
+    if (kpiLabel?.includes("Average")) {
+      return `SELECT ROUND(AVG(${yKey}), 2) AS avg_${yKey}\nFROM ${tableName};`;
+    }
+    if (kpiLabel?.includes("Total records")) {
+      return `SELECT COUNT(*) AS total_records\nFROM ${tableName};`;
+    }
+    return `SELECT ROUND(SUM(${yKey}), 2) AS total_${yKey}\nFROM ${tableName};`;
+  }
+
+  if (type === "table") {
+    const cols = config.columns?.join(", ") || "*";
+    return `SELECT ${cols}\nFROM ${tableName}\nORDER BY ${yKey || "1"} DESC\nLIMIT 50;`;
+  }
+
+  // Chart types
+  const aggFunc = kpiLabel?.includes("avg") ? "AVG" : "SUM";
+  return `SELECT ${xKey},\n       ROUND(${aggFunc}(${yKey}), 2) AS ${yKey}\nFROM ${tableName}\nGROUP BY ${xKey}\nORDER BY ${yKey} DESC;`;
+}
+
+function generatePython(config: ChartConfig): string {
+  const { type, xKey, yKey, kpiLabel } = config;
+  const lines: string[] = ["import pandas as pd", "import matplotlib.pyplot as plt", "", "df = pd.read_csv('dataset.csv')", ""];
+
+  if (type === "kpi") {
+    if (kpiLabel?.includes("Average")) {
+      lines.push(`result = df['${yKey}'].mean()`, `print(f"Average ${yKey}: {result:.2f}")`);
+    } else if (kpiLabel?.includes("Total records")) {
+      lines.push(`result = len(df)`, `print(f"Total records: {result}")`);
+    } else {
+      lines.push(`result = df['${yKey}'].sum()`, `print(f"Total ${yKey}: {result:.2f}")`);
+    }
+    return lines.join("\n");
+  }
+
+  if (type === "table") {
+    const cols = config.columns?.map(c => `'${c}'`).join(", ") || "";
+    lines.push(`top_data = df[[${cols}]].sort_values('${yKey}', ascending=False).head(50)`, `print(top_data.to_string())`);
+    return lines.join("\n");
+  }
+
+  lines.push(`grouped = df.groupby('${xKey}')['${yKey}'].sum().sort_values(ascending=False)`, "");
+
+  switch (type) {
+    case "bar":
+      lines.push(`grouped.plot(kind='bar', figsize=(10, 6), color='#6366f1')`, `plt.title('${config.title}')`, `plt.xlabel('${xKey}')`, `plt.ylabel('${yKey}')`, `plt.xticks(rotation=45)`, `plt.tight_layout()`, `plt.show()`);
+      break;
+    case "line":
+    case "area":
+      lines.push(`grouped.plot(kind='${type === "area" ? "area" : "line"}', figsize=(10, 6), color='#6366f1')`, `plt.title('${config.title}')`, `plt.xlabel('${xKey}')`, `plt.ylabel('${yKey}')`, `plt.tight_layout()`, `plt.show()`);
+      break;
+    case "pie":
+      lines.push(`grouped.head(10).plot(kind='pie', figsize=(8, 8), autopct='%1.0f%%')`, `plt.title('${config.title}')`, `plt.ylabel('')`, `plt.show()`);
+      break;
+    case "scatter":
+      lines.push(`plt.figure(figsize=(10, 6))`, `plt.scatter(df['${xKey}'], df['${yKey}'], alpha=0.6, color='#6366f1')`, `plt.title('${config.title}')`, `plt.xlabel('${xKey}')`, `plt.ylabel('${yKey}')`, `plt.tight_layout()`, `plt.show()`);
+      break;
+    default:
+      lines.push(`grouped.plot(kind='bar', figsize=(10, 6))`, `plt.title('${config.title}')`, `plt.tight_layout()`, `plt.show()`);
+  }
+
+  return lines.join("\n");
+}
+
 export function interpretPrompt(
   prompt: string,
   columns: DataColumn[],
@@ -61,7 +130,6 @@ export function interpretPrompt(
   const numericCols = columns.filter((c) => c.type === "number").map((c) => c.name);
   const stringCols = columns.filter((c) => c.type === "string" || c.type === "date").map((c) => c.name);
 
-  // Try to find referenced columns
   const allNames = columns.map((c) => c.name);
   const mentioned = allNames.filter((n) => p.includes(n.toLowerCase()));
 
@@ -71,7 +139,6 @@ export function interpretPrompt(
   if (!xKey) xKey = allNames[0];
   if (!yKey) yKey = allNames[1] ?? allNames[0];
 
-  // "top N" handling
   const topMatch = p.match(/top\s+(\d+)/);
   const topN = topMatch ? parseInt(topMatch[1]) : undefined;
 
@@ -91,14 +158,19 @@ export function interpretPrompt(
       kpiLabel = `Total ${yKey}`;
     }
 
-    return {
+    const cfg: ChartConfig = {
       id: generateId(),
       type: "kpi",
       title: kpiLabel,
       data: [],
+      xKey,
+      yKey,
       kpiValue: kpiValue.toLocaleString(),
       kpiLabel,
     };
+    cfg.sqlCode = generateSQL(cfg);
+    cfg.pythonCode = generatePython(cfg);
+    return cfg;
   }
 
   if (chartType === "table") {
@@ -111,13 +183,18 @@ export function interpretPrompt(
     } else if (topN) {
       tableData = rows.slice(0, topN);
     }
-    return {
+    const cfg: ChartConfig = {
       id: generateId(),
       type: "table",
       title: topN ? `Top ${topN} by ${yKey}` : "Data Summary",
       data: tableData.slice(0, 50),
+      xKey,
+      yKey,
       columns: cols,
     };
+    cfg.sqlCode = generateSQL(cfg);
+    cfg.pythonCode = generatePython(cfg);
+    return cfg;
   }
 
   // For chart types: aggregate if grouping makes sense
@@ -134,14 +211,13 @@ export function interpretPrompt(
       .slice(0, topN);
   }
 
-  // Limit pie to 10 slices
   if (chartType === "pie") {
     chartData = chartData.slice(0, 10);
   }
 
   const title = prompt.charAt(0).toUpperCase() + prompt.slice(1);
 
-  return {
+  const cfg: ChartConfig = {
     id: generateId(),
     type: chartType,
     title,
@@ -151,4 +227,34 @@ export function interpretPrompt(
     valueKey: yKey,
     data: chartData,
   };
+  cfg.sqlCode = generateSQL(cfg);
+  cfg.pythonCode = generatePython(cfg);
+  return cfg;
+}
+
+/** Create a chart from a visual type picker click (auto-selects best columns) */
+export function createFromType(
+  type: ChartType,
+  columns: DataColumn[],
+  rows: Record<string, unknown>[]
+): ChartConfig {
+  const typePromptMap: Record<string, string> = {
+    bar: "Create a bar chart",
+    line: "Show a line chart trend",
+    pie: "Show distribution as pie chart",
+    scatter: "Create a scatter plot",
+    kpi: "Show total as KPI",
+    table: "Show data summary table",
+    area: "Create an area chart",
+    radar: "Create a radar chart",
+    funnel: "Create a funnel chart",
+    treemap: "Create a treemap",
+    histogram: "Create a histogram",
+    heatmap: "Create a heatmap",
+    waterfall: "Create a waterfall chart",
+    gauge: "Create a gauge chart",
+    combo: "Create a combo chart",
+  };
+  const prompt = typePromptMap[type] || "Create a bar chart";
+  return interpretPrompt(prompt, columns, rows);
 }

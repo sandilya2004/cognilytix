@@ -1,4 +1,4 @@
-export type ChartType = "bar" | "line" | "pie" | "scatter" | "kpi" | "table";
+export type ChartType = "bar" | "line" | "pie" | "scatter" | "kpi" | "table" | "area" | "radar" | "funnel" | "treemap" | "histogram" | "heatmap" | "waterfall" | "gauge" | "combo";
 
 export interface ChartConfig {
   id: string;
@@ -13,6 +13,8 @@ export interface ChartConfig {
   kpiLabel?: string;
   kpiChange?: number;
   columns?: string[];
+  sqlCode?: string;
+  pythonCode?: string;
 }
 
 export function generateId(): string {
