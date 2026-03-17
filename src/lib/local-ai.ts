@@ -263,6 +263,15 @@ export function createFromType(
     waterfall: "Create a waterfall chart",
     gauge: "Create a gauge chart",
     combo: "Create a combo chart",
+    "clustered-column": "Create a clustered column chart",
+    "clustered-bar": "Create a clustered bar chart",
+    "stacked-column": "Create a stacked column chart",
+    "stacked-bar": "Create a stacked bar chart",
+    matrix: "Show data as matrix table",
+    card: "Show a card KPI",
+    narrative: "Create a narrative story",
+    slicer: "Create a slicer filter",
+    "decomposition-tree": "Create a decomposition tree",
   };
   const prompt = typePromptMap[type] || "Create a bar chart";
   return interpretPrompt(prompt, columns, rows);
