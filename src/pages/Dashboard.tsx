@@ -217,11 +217,12 @@ export default function Dashboard() {
     }
     saveProjects(projects);
 
-    // Save project data
+    // Save project data including the parsed data so it can be restored
     localStorage.setItem(`datalens_project_${projectId}`, JSON.stringify({
       charts,
       summaryText,
       fileName,
+      data,
     }));
 
     toast.success("Project saved!");
