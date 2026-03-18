@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Upload, Sparkles, Download, ArrowRight } from "lucide-react";
+import { Zap, Upload, Sparkles, BarChart3, Download, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import heroImage from "@/assets/hero-dashboard.png";
 
@@ -45,8 +45,8 @@ export default function LandingPage() {
       <nav className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
-            <BarChart3 className="h-6 w-6 text-primary" />
-            <span className="text-lg font-semibold text-foreground">DataLens</span>
+            <Zap className="h-6 w-6 text-primary" />
+            <span className="text-lg font-semibold text-foreground">InsightFlow</span>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => navigate("/projects")}>
@@ -100,9 +100,9 @@ export default function LandingPage() {
                 <div className="w-3 h-3 rounded-full bg-chart-3/60" />
                 <div className="w-3 h-3 rounded-full bg-accent/60" />
               </div>
-              <div className="flex-1 text-center text-xs text-muted-foreground">datalens.app/dashboard</div>
+              <div className="flex-1 text-center text-xs text-muted-foreground">insightflow.app/dashboard</div>
             </div>
-            <img src={heroImage} alt="DataLens dashboard showing AI-generated charts and data visualizations" className="w-full" />
+            <img src={heroImage} alt="InsightFlow dashboard showing AI-generated charts and data visualizations" className="w-full" />
           </div>
         </motion.div>
       </section>
@@ -139,7 +139,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-border py-8">
         <div className="container text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} DataLens. AI-powered data analytics.
+          © {new Date().getFullYear()} InsightFlow. AI-powered data analytics.
         </div>
       </footer>
     </div>

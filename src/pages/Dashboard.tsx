@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { BarChart3, ArrowLeft, FileDown, Presentation, FileText, FolderOpen } from "lucide-react";
+import { ArrowLeft, FileDown, FileText, FolderOpen, Save, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FileUpload from "@/components/dashboard/FileUpload";
 import DataPreview from "@/components/dashboard/DataPreview";
@@ -12,9 +12,8 @@ import type { ParsedData } from "@/lib/data-processing";
 import type { ChartConfig, ChartType } from "@/lib/chart-types";
 import { interpretPrompt, createFromType } from "@/lib/local-ai";
 import { generateSummary } from "@/lib/summarize";
-import { exportToPPTX } from "@/lib/export-pptx";
 import { toast } from "sonner";
-import jsPDF from "jspdf";
+import { getProjects, saveProjects, type Project } from "@/pages/Projects";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -39,9 +38,8 @@ export default function Dashboard() {
       try {
         await new Promise((r) => setTimeout(r, 400));
 
-        // Check for summary/insight requests
         const p = prompt.toLowerCase();
-        if (p.includes("summar") || p.includes("insight") || p.includes("analysis") || p.includes("recommend") || p.includes("trend") && p.includes("detail")) {
+        if (p.includes("summar") || p.includes("insight") || p.includes("analysis") || p.includes("recommend") || (p.includes("trend") && p.includes("detail"))) {
           const summary = generateSummary(charts, data);
           setSummaryText(summary);
           toast.success("Summary generated!");
@@ -49,19 +47,10 @@ export default function Dashboard() {
           return;
         }
 
-        // Check for PPTX request
-        if (p.includes("ppt") || p.includes("presentation") || p.includes("power point") || p.includes("powerpoint") || p.includes("slide")) {
-          toast.info("Generating PowerPoint…");
-          await exportToPPTX(charts, summaryText || generateSummary(charts, data));
-          toast.success("PowerPoint exported!");
-          setIsProcessing(false);
-          return;
-        }
-
         const config = interpretPrompt(prompt, data.columns, data.rows);
         setCharts((prev) => [config, ...prev]);
         toast.success(`Generated: ${config.title}`);
-      } catch (err) {
+      } catch {
         toast.error("Failed to interpret prompt. Try rephrasing.");
       } finally {
         setIsProcessing(false);
@@ -97,23 +86,21 @@ export default function Dashboard() {
 
   const exportDashboardPDF = async () => {
     const chartEls = document.querySelectorAll("#chart-grid > div");
-    if (chartEls.length === 0) return;
-    toast.info("Generating PDF…");
+    const summaryEl = document.querySelector("#summary-panel");
+    if (chartEls.length === 0 && !summaryEl) return;
+
+    toast.info("Generating PDF with all visuals…");
     try {
       const { default: html2canvas } = await import("html2canvas");
+      const { default: jsPDF } = await import("jspdf");
       const pdf = new jsPDF({ orientation: "landscape" });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
       const margin = 10;
-      const usableW = (pageW - margin * 3) / 2;
-      const usableH = (pageH - margin * 3) / 2;
-      let col = 0;
-      let row = 0;
 
+      // Capture all chart elements one per page (full size, no clipping)
       for (let i = 0; i < chartEls.length; i++) {
-        if (i > 0 && col === 0 && row === 0) {
-          pdf.addPage();
-        }
+        if (i > 0) pdf.addPage();
 
         const el = chartEls[i] as HTMLElement;
         const canvas = await html2canvas(el, {
@@ -125,34 +112,82 @@ export default function Dashboard() {
 
         const imgData = canvas.toDataURL("image/png");
         const imgRatio = canvas.width / canvas.height;
+        const usableW = pageW - margin * 2;
+        const usableH = pageH - margin * 2;
         let w = usableW;
         let h = w / imgRatio;
-        if (h > usableH) { h = usableH; w = h * imgRatio; }
-
-        const x = margin + col * (usableW + margin);
-        const y = margin + row * (usableH + margin);
+        if (h > usableH) {
+          h = usableH;
+          w = h * imgRatio;
+        }
+        const x = (pageW - w) / 2;
+        const y = (pageH - h) / 2;
         pdf.addImage(imgData, "PNG", x, y, w, h);
+      }
 
-        col++;
-        if (col >= 2) { col = 0; row++; }
-        if (row >= 2) { col = 0; row = 0; }
+      // Capture summary panel if present
+      if (summaryEl) {
+        pdf.addPage();
+        const summaryCanvas = await html2canvas(summaryEl as HTMLElement, {
+          backgroundColor: "#ffffff",
+          scale: 2,
+          useCORS: true,
+          logging: false,
+        });
+        const imgData = summaryCanvas.toDataURL("image/png");
+        const imgRatio = summaryCanvas.width / summaryCanvas.height;
+        const usableW = pageW - margin * 2;
+        const usableH = pageH - margin * 2;
+        let w = usableW;
+        let h = w / imgRatio;
+        if (h > usableH) {
+          h = usableH;
+          w = h * imgRatio;
+        }
+        const x = (pageW - w) / 2;
+        const y = margin;
+        pdf.addImage(imgData, "PNG", x, y, w, h);
       }
 
       pdf.save("dashboard.pdf");
-      toast.success("PDF exported with all visuals!");
+      toast.success("PDF exported with all visuals & summary!");
     } catch {
       toast.error("PDF export failed. Try again.");
     }
   };
 
-  const handleExportPPTX = async () => {
-    toast.info("Generating PowerPoint…");
-    try {
-      await exportToPPTX(charts, summaryText || (data ? generateSummary(charts, data) : ""));
-      toast.success("PowerPoint exported!");
-    } catch {
-      toast.error("PowerPoint export failed.");
+  const handleSaveProject = () => {
+    if (!data) {
+      toast.error("Upload data first before saving.");
+      return;
     }
+    const projectId = searchParams.get("project") || crypto.randomUUID();
+    const projects = getProjects();
+    const existing = projects.findIndex(p => p.id === projectId);
+
+    const project: Project = {
+      id: projectId,
+      name: fileName.replace(/\.[^/.]+$/, "") || "Untitled Project",
+      fileName,
+      createdAt: existing >= 0 ? projects[existing].createdAt : new Date().toISOString(),
+      chartCount: charts.length,
+    };
+
+    if (existing >= 0) {
+      projects[existing] = project;
+    } else {
+      projects.unshift(project);
+    }
+    saveProjects(projects);
+
+    // Save project data
+    localStorage.setItem(`datalens_project_${projectId}`, JSON.stringify({
+      charts,
+      summaryText,
+      fileName,
+    }));
+
+    toast.success("Project saved!");
   };
 
   return (
@@ -163,8 +198,8 @@ export default function Dashboard() {
             <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <BarChart3 className="h-5 w-5 text-primary" />
-            <span className="font-semibold text-foreground">DataLens</span>
+            <Zap className="h-5 w-5 text-primary" />
+            <span className="font-semibold text-foreground">InsightFlow</span>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => navigate("/projects")}>
@@ -176,10 +211,6 @@ export default function Dashboard() {
                 <Button variant="ghost" size="sm" onClick={handleGenerateSummary}>
                   <FileText className="h-4 w-4 mr-1" />
                   Summary
-                </Button>
-                <Button variant="ghost" size="sm" onClick={handleExportPPTX}>
-                  <Presentation className="h-4 w-4 mr-1" />
-                  PPTX
                 </Button>
                 <Button variant="outline" size="sm" onClick={exportDashboardPDF}>
                   <FileDown className="h-4 w-4 mr-1" />
@@ -203,7 +234,11 @@ export default function Dashboard() {
           </>
         )}
 
-        {summaryText && <SummaryPanel summaryText={summaryText} />}
+        {summaryText && (
+          <div id="summary-panel">
+            <SummaryPanel summaryText={summaryText} />
+          </div>
+        )}
 
         {charts.length > 0 && (
           <div id="chart-grid" className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -229,6 +264,16 @@ export default function Dashboard() {
             <p className="text-muted-foreground">
               Your visualizations will appear here. Try a prompt or click a visual type above.
             </p>
+          </div>
+        )}
+
+        {/* Save Project Button */}
+        {data && (
+          <div className="flex justify-center pt-4 pb-8">
+            <Button variant="hero" size="lg" onClick={handleSaveProject}>
+              <Save className="h-5 w-5 mr-2" />
+              Save Project
+            </Button>
           </div>
         )}
       </main>
