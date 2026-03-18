@@ -101,6 +101,29 @@ export default function Dashboard() {
     toast.success("Summary generated!");
   };
 
+  const handleSlicerToggle = useCallback((columnKey: string, value: string) => {
+    setSlicerFilters(prev => {
+      const next = { ...prev };
+      const set = new Set(next[columnKey] || []);
+      if (set.has(value)) set.delete(value);
+      else set.add(value);
+      if (set.size === 0) delete next[columnKey];
+      else next[columnKey] = set;
+      return next;
+    });
+  }, []);
+
+  // Compute filtered data for charts based on active slicer filters
+  const getFilteredData = useCallback(() => {
+    if (!data || Object.keys(slicerFilters).length === 0) return null;
+    const filtered = data.rows.filter(row => {
+      return Object.entries(slicerFilters).every(([key, values]) => {
+        return values.has(String(row[key] ?? ""));
+      });
+    });
+    return filtered;
+  }, [data, slicerFilters]);
+
   const exportDashboardPDF = async () => {
     const chartEls = document.querySelectorAll("#chart-grid > div");
     const summaryEl = document.querySelector("#summary-panel");
@@ -114,56 +137,53 @@ export default function Dashboard() {
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
       const margin = 10;
+      const gap = 6;
+      const cols = 2;
+      const cellW = (pageW - margin * 2 - gap) / cols;
+      const cellH = (pageH - margin * 2 - gap) / 2; // 2 rows per page
 
-      // Capture all chart elements one per page (full size, no clipping)
+      // Collect all images first
+      const images: { data: string; w: number; h: number }[] = [];
       for (let i = 0; i < chartEls.length; i++) {
-        if (i > 0) pdf.addPage();
-
         const el = chartEls[i] as HTMLElement;
-        const canvas = await html2canvas(el, {
-          backgroundColor: "#ffffff",
-          scale: 2,
-          useCORS: true,
-          logging: false,
-        });
-
-        const imgData = canvas.toDataURL("image/png");
-        const imgRatio = canvas.width / canvas.height;
-        const usableW = pageW - margin * 2;
-        const usableH = pageH - margin * 2;
-        let w = usableW;
-        let h = w / imgRatio;
-        if (h > usableH) {
-          h = usableH;
-          w = h * imgRatio;
-        }
-        const x = (pageW - w) / 2;
-        const y = (pageH - h) / 2;
-        pdf.addImage(imgData, "PNG", x, y, w, h);
+        const canvas = await html2canvas(el, { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false });
+        images.push({ data: canvas.toDataURL("image/png"), w: canvas.width, h: canvas.height });
       }
 
-      // Capture summary panel if present
+      // Place charts in 2x2 grid per page
+      const perPage = 4;
+      for (let i = 0; i < images.length; i++) {
+        const pageIdx = Math.floor(i / perPage);
+        const posInPage = i % perPage;
+        if (i > 0 && posInPage === 0) pdf.addPage();
+
+        const col = posInPage % cols;
+        const row = Math.floor(posInPage / cols);
+        const cellX = margin + col * (cellW + gap);
+        const cellY = margin + row * (cellH + gap);
+
+        const img = images[i];
+        const imgRatio = img.w / img.h;
+        let w = cellW;
+        let h = w / imgRatio;
+        if (h > cellH) { h = cellH; w = h * imgRatio; }
+        const x = cellX + (cellW - w) / 2;
+        const y = cellY + (cellH - h) / 2;
+        pdf.addImage(img.data, "PNG", x, y, w, h);
+      }
+
+      // Summary on its own page
       if (summaryEl) {
         pdf.addPage();
-        const summaryCanvas = await html2canvas(summaryEl as HTMLElement, {
-          backgroundColor: "#ffffff",
-          scale: 2,
-          useCORS: true,
-          logging: false,
-        });
+        const summaryCanvas = await html2canvas(summaryEl as HTMLElement, { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false });
         const imgData = summaryCanvas.toDataURL("image/png");
         const imgRatio = summaryCanvas.width / summaryCanvas.height;
         const usableW = pageW - margin * 2;
         const usableH = pageH - margin * 2;
         let w = usableW;
         let h = w / imgRatio;
-        if (h > usableH) {
-          h = usableH;
-          w = h * imgRatio;
-        }
-        const x = (pageW - w) / 2;
-        const y = margin;
-        pdf.addImage(imgData, "PNG", x, y, w, h);
+        if (h > usableH) { h = usableH; w = h * imgRatio; }
+        pdf.addImage(imgData, "PNG", margin + (usableW - w) / 2, margin, w, h);
       }
 
       pdf.save("dashboard.pdf");
