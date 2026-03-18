@@ -281,7 +281,14 @@ export default function Dashboard() {
         {charts.length > 0 && (
           <div id="chart-grid" className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {charts.map((chart) => (
-              <ChartCard key={chart.id} config={chart} onRemove={removeChart} />
+              <ChartCard
+                key={chart.id}
+                config={chart}
+                onRemove={removeChart}
+                filteredData={getFilteredData()}
+                slicerFilters={slicerFilters}
+                onSlicerToggle={handleSlicerToggle}
+              />
             ))}
           </div>
         )}

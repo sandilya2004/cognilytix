@@ -246,19 +246,41 @@ export default function ChartCard({ config, onRemove, filteredData, slicerFilter
           </div>
         );
 
-      case "slicer":
+      case "slicer": {
+        const uniqueVals = [...new Set(config.data.map(d => String(d[config.xKey!])))].slice(0, 30);
+        const activeSet = slicerFilters?.[config.xKey!];
         return (
           <div className="p-4 max-h-[280px] overflow-y-auto">
             <p className="text-xs text-muted-foreground mb-2">Filter by {config.xKey}:</p>
             <div className="flex flex-wrap gap-2">
-              {[...new Set(data.map(d => String(d[config.xKey!])))].slice(0, 30).map(val => (
-                <span key={val} className="text-xs px-2.5 py-1 rounded-full border border-border bg-background hover:bg-primary/10 hover:border-primary cursor-pointer transition-colors">
-                  {val}
-                </span>
-              ))}
+              {uniqueVals.map(val => {
+                const isActive = activeSet?.has(val);
+                return (
+                  <span
+                    key={val}
+                    onClick={() => onSlicerToggle?.(config.xKey!, val)}
+                    className={`text-xs px-2.5 py-1 rounded-full border cursor-pointer transition-colors ${
+                      isActive
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "border-border bg-background hover:bg-primary/10 hover:border-primary"
+                    }`}
+                  >
+                    {val}
+                  </span>
+                );
+              })}
             </div>
+            {activeSet && activeSet.size > 0 && (
+              <button
+                className="text-xs text-primary mt-2 underline"
+                onClick={() => activeSet.forEach(v => onSlicerToggle?.(config.xKey!, v))}
+              >
+                Clear filters
+              </button>
+            )}
           </div>
         );
+      }
 
       case "decomposition-tree":
         return (
