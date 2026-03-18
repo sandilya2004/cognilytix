@@ -22,6 +22,9 @@ const COLORS = [
 interface ChartCardProps {
   config: ChartConfig;
   onRemove: (id: string) => void;
+  filteredData?: Record<string, unknown>[] | null;
+  slicerFilters?: Record<string, Set<string>>;
+  onSlicerToggle?: (columnKey: string, value: string) => void;
 }
 
 export default function ChartCard({ config, onRemove }: ChartCardProps) {
