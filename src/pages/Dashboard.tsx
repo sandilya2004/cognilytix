@@ -23,12 +23,29 @@ export default function Dashboard() {
   const [charts, setCharts] = useState<ChartConfig[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [summaryText, setSummaryText] = useState("");
+  const [slicerFilters, setSlicerFilters] = useState<Record<string, Set<string>>>({});
+
+  // Restore saved project on mount
+  useState(() => {
+    const projectId = searchParams.get("project");
+    if (!projectId) return;
+    try {
+      const saved = localStorage.getItem(`datalens_project_${projectId}`);
+      if (!saved) return;
+      const parsed = JSON.parse(saved);
+      if (parsed.charts) setCharts(parsed.charts);
+      if (parsed.summaryText) setSummaryText(parsed.summaryText);
+      if (parsed.fileName) setFileName(parsed.fileName);
+      if (parsed.data) setData(parsed.data);
+    } catch { /* ignore */ }
+  });
 
   const handleDataLoaded = useCallback((parsed: ParsedData, name: string) => {
     setData(parsed);
     setFileName(name);
     setCharts([]);
     setSummaryText("");
+    setSlicerFilters({});
   }, []);
 
   const handlePrompt = useCallback(
