@@ -47,7 +47,9 @@ export default function ChartCard({ config, onRemove, filteredData, slicerFilter
   };
 
   const renderChart = () => {
-    const { type, data, xKey, yKey, yKeys } = config;
+    const { type, xKey, yKey, yKeys } = config;
+    // Use filtered data if available (from slicer), otherwise use config data
+    const data = (type !== "slicer" && filteredData) ? filteredData : config.data;
 
     switch (type) {
       case "bar":
