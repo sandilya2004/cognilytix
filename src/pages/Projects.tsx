@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { BarChart3, Plus, Trash2, Clock, ArrowLeft, FolderOpen } from "lucide-react";
+import { Zap, Plus, Trash2, Clock, ArrowLeft, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
-interface Project {
+export interface Project {
   id: string;
   name: string;
   fileName: string;
@@ -12,13 +12,13 @@ interface Project {
   chartCount: number;
 }
 
-function getProjects(): Project[] {
+export function getProjects(): Project[] {
   try {
     return JSON.parse(localStorage.getItem("datalens_projects") || "[]");
   } catch { return []; }
 }
 
-function saveProjects(projects: Project[]) {
+export function saveProjects(projects: Project[]) {
   localStorage.setItem("datalens_projects", JSON.stringify(projects));
 }
 
@@ -45,7 +45,7 @@ export default function Projects() {
             <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <BarChart3 className="h-5 w-5 text-primary" />
+            <Zap className="h-5 w-5 text-primary" />
             <span className="font-semibold text-foreground">My Projects</span>
           </div>
           <Button onClick={() => navigate("/dashboard")}>
@@ -60,7 +60,7 @@ export default function Projects() {
           <div className="text-center py-20">
             <FolderOpen className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-foreground mb-2">No projects yet</h2>
-            <p className="text-muted-foreground mb-6">Start analyzing data to create your first project.</p>
+            <p className="text-muted-foreground mb-6">Start analyzing data and click Save to create your first project.</p>
             <Button variant="hero" onClick={() => navigate("/dashboard")}>
               <Plus className="h-4 w-4 mr-1" />
               Create First Project
@@ -80,7 +80,7 @@ export default function Projects() {
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <BarChart3 className="h-5 w-5 text-primary" />
+                      <Zap className="h-5 w-5 text-primary" />
                     </div>
                     <div>
                       <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{project.name}</h3>
@@ -111,5 +111,3 @@ export default function Projects() {
     </div>
   );
 }
-
-export { getProjects, saveProjects, type Project };
