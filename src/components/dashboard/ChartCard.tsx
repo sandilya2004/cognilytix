@@ -27,7 +27,7 @@ interface ChartCardProps {
   onSlicerToggle?: (columnKey: string, value: string) => void;
 }
 
-export default function ChartCard({ config, onRemove }: ChartCardProps) {
+export default function ChartCard({ config, onRemove, filteredData, slicerFilters, onSlicerToggle }: ChartCardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [showCode, setShowCode] = useState<"none" | "sql" | "python">("none");
 
