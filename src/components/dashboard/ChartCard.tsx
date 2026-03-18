@@ -22,9 +22,12 @@ const COLORS = [
 interface ChartCardProps {
   config: ChartConfig;
   onRemove: (id: string) => void;
+  filteredData?: Record<string, unknown>[] | null;
+  slicerFilters?: Record<string, Set<string>>;
+  onSlicerToggle?: (columnKey: string, value: string) => void;
 }
 
-export default function ChartCard({ config, onRemove }: ChartCardProps) {
+export default function ChartCard({ config, onRemove, filteredData, slicerFilters, onSlicerToggle }: ChartCardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [showCode, setShowCode] = useState<"none" | "sql" | "python">("none");
 
@@ -44,7 +47,9 @@ export default function ChartCard({ config, onRemove }: ChartCardProps) {
   };
 
   const renderChart = () => {
-    const { type, data, xKey, yKey, yKeys } = config;
+    const { type, xKey, yKey, yKeys } = config;
+    // Use filtered data if available (from slicer), otherwise use config data
+    const data = (type !== "slicer" && filteredData) ? filteredData : config.data;
 
     switch (type) {
       case "bar":
@@ -241,19 +246,41 @@ export default function ChartCard({ config, onRemove }: ChartCardProps) {
           </div>
         );
 
-      case "slicer":
+      case "slicer": {
+        const uniqueVals = [...new Set(config.data.map(d => String(d[config.xKey!])))].slice(0, 30);
+        const activeSet = slicerFilters?.[config.xKey!];
         return (
           <div className="p-4 max-h-[280px] overflow-y-auto">
             <p className="text-xs text-muted-foreground mb-2">Filter by {config.xKey}:</p>
             <div className="flex flex-wrap gap-2">
-              {[...new Set(data.map(d => String(d[config.xKey!])))].slice(0, 30).map(val => (
-                <span key={val} className="text-xs px-2.5 py-1 rounded-full border border-border bg-background hover:bg-primary/10 hover:border-primary cursor-pointer transition-colors">
-                  {val}
-                </span>
-              ))}
+              {uniqueVals.map(val => {
+                const isActive = activeSet?.has(val);
+                return (
+                  <span
+                    key={val}
+                    onClick={() => onSlicerToggle?.(config.xKey!, val)}
+                    className={`text-xs px-2.5 py-1 rounded-full border cursor-pointer transition-colors ${
+                      isActive
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "border-border bg-background hover:bg-primary/10 hover:border-primary"
+                    }`}
+                  >
+                    {val}
+                  </span>
+                );
+              })}
             </div>
+            {activeSet && activeSet.size > 0 && (
+              <button
+                className="text-xs text-primary mt-2 underline"
+                onClick={() => activeSet.forEach(v => onSlicerToggle?.(config.xKey!, v))}
+              >
+                Clear filters
+              </button>
+            )}
           </div>
         );
+      }
 
       case "decomposition-tree":
         return (
