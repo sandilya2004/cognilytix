@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Zap, Upload, Sparkles, BarChart3, Download, ArrowRight } from "lucide-react";
+import { Brain, Upload, Sparkles, BarChart3, Download, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import heroImage from "@/assets/hero-dashboard.png";
 
@@ -45,15 +45,18 @@ export default function LandingPage() {
       <nav className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
-            <Zap className="h-6 w-6 text-primary" />
-            <span className="text-lg font-semibold text-foreground">InsightFlow</span>
+            <Brain className="h-6 w-6 text-primary" />
+            <span className="text-lg font-semibold text-foreground">Cognilytix AI</span>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => navigate("/projects")}>
               My Projects
             </Button>
-            <Button variant="hero" size="lg" onClick={() => navigate("/dashboard")}>
-              Start Analyzing
+            <Button variant="ghost" size="sm" onClick={() => navigate("/pricing")}>
+              Pricing
+            </Button>
+            <Button variant="hero" size="lg" onClick={() => navigate("/pricing")}>
+              Start Free Trial
               <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
@@ -78,9 +81,13 @@ export default function LandingPage() {
             Upload your dataset, ask questions in plain English, and get beautiful
             visualizations instantly. No coding required.
           </p>
-          <div className="mt-10 flex justify-center gap-4">
-            <Button variant="hero" size="lg" onClick={() => navigate("/dashboard")}>
-              Start Analyzing — It's Free
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-4 py-1.5 text-sm text-accent">
+            <Sparkles className="h-4 w-4" />
+            1 month free trial — no credit card required
+          </div>
+          <div className="mt-8 flex justify-center gap-4">
+            <Button variant="hero" size="lg" onClick={() => navigate("/pricing")}>
+              Start Free Trial
               <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
@@ -100,9 +107,9 @@ export default function LandingPage() {
                 <div className="w-3 h-3 rounded-full bg-chart-3/60" />
                 <div className="w-3 h-3 rounded-full bg-accent/60" />
               </div>
-              <div className="flex-1 text-center text-xs text-muted-foreground">insightflow.app/dashboard</div>
+              <div className="flex-1 text-center text-xs text-muted-foreground">cognilytix.ai/dashboard</div>
             </div>
-            <img src={heroImage} alt="InsightFlow dashboard showing AI-generated charts and data visualizations" className="w-full" />
+            <img src={heroImage} alt="Cognilytix AI dashboard showing AI-generated charts and data visualizations" className="w-full" />
           </div>
         </motion.div>
       </section>
@@ -139,7 +146,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-border py-8">
         <div className="container text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} InsightFlow. AI-powered data analytics.
+          © {new Date().getFullYear()} Cognilytix AI. AI-powered data analytics.
         </div>
       </footer>
     </div>
