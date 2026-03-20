@@ -30,7 +30,7 @@ export default function Dashboard() {
     const projectId = searchParams.get("project");
     if (!projectId) return;
     try {
-      const saved = localStorage.getItem(`datalens_project_${projectId}`);
+      const saved = localStorage.getItem(`cognilytix_project_${projectId}`);
       if (!saved) return;
       const parsed = JSON.parse(saved);
       if (parsed.charts) setCharts(parsed.charts);
