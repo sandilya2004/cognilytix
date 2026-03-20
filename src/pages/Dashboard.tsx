@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, FileDown, FileText, FolderOpen, Save, Zap } from "lucide-react";
+import { ArrowLeft, Brain, FileDown, FileText, FolderOpen, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FileUpload from "@/components/dashboard/FileUpload";
 import DataPreview from "@/components/dashboard/DataPreview";
