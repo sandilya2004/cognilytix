@@ -239,8 +239,8 @@ export default function Dashboard() {
             <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <Zap className="h-5 w-5 text-primary" />
-            <span className="font-semibold text-foreground">InsightFlow</span>
+            <Brain className="h-5 w-5 text-primary" />
+            <span className="font-semibold text-foreground">Cognilytix AI</span>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => navigate("/projects")}>
