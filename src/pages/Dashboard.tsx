@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, FileDown, FileText, FolderOpen, Save, Zap } from "lucide-react";
+import { ArrowLeft, Brain, FileDown, FileText, FolderOpen, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FileUpload from "@/components/dashboard/FileUpload";
 import DataPreview from "@/components/dashboard/DataPreview";
@@ -30,7 +30,7 @@ export default function Dashboard() {
     const projectId = searchParams.get("project");
     if (!projectId) return;
     try {
-      const saved = localStorage.getItem(`datalens_project_${projectId}`);
+      const saved = localStorage.getItem(`cognilytix_project_${projectId}`);
       if (!saved) return;
       const parsed = JSON.parse(saved);
       if (parsed.charts) setCharts(parsed.charts);
@@ -199,15 +199,19 @@ export default function Dashboard() {
       return;
     }
     const projectId = searchParams.get("project") || crypto.randomUUID();
+    const folderId = searchParams.get("folder") || "";
+    const num = parseInt(searchParams.get("num") || "0", 10);
     const projects = getProjects();
     const existing = projects.findIndex(p => p.id === projectId);
 
     const project: Project = {
       id: projectId,
+      folderId,
       name: fileName.replace(/\.[^/.]+$/, "") || "Untitled Project",
       fileName,
       createdAt: existing >= 0 ? projects[existing].createdAt : new Date().toISOString(),
       chartCount: charts.length,
+      projectNumber: existing >= 0 ? projects[existing].projectNumber : (num || projects.filter(p => p.folderId === folderId).length + 1),
     };
 
     if (existing >= 0) {
@@ -217,8 +221,7 @@ export default function Dashboard() {
     }
     saveProjects(projects);
 
-    // Save project data including the parsed data so it can be restored
-    localStorage.setItem(`datalens_project_${projectId}`, JSON.stringify({
+    localStorage.setItem(`cognilytix_project_${projectId}`, JSON.stringify({
       charts,
       summaryText,
       fileName,
@@ -236,8 +239,8 @@ export default function Dashboard() {
             <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <Zap className="h-5 w-5 text-primary" />
-            <span className="font-semibold text-foreground">InsightFlow</span>
+            <Brain className="h-5 w-5 text-primary" />
+            <span className="font-semibold text-foreground">Cognilytix AI</span>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => navigate("/projects")}>
