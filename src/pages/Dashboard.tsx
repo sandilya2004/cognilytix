@@ -199,15 +199,19 @@ export default function Dashboard() {
       return;
     }
     const projectId = searchParams.get("project") || crypto.randomUUID();
+    const folderId = searchParams.get("folder") || "";
+    const num = parseInt(searchParams.get("num") || "0", 10);
     const projects = getProjects();
     const existing = projects.findIndex(p => p.id === projectId);
 
     const project: Project = {
       id: projectId,
+      folderId,
       name: fileName.replace(/\.[^/.]+$/, "") || "Untitled Project",
       fileName,
       createdAt: existing >= 0 ? projects[existing].createdAt : new Date().toISOString(),
       chartCount: charts.length,
+      projectNumber: existing >= 0 ? projects[existing].projectNumber : (num || projects.filter(p => p.folderId === folderId).length + 1),
     };
 
     if (existing >= 0) {
@@ -217,8 +221,7 @@ export default function Dashboard() {
     }
     saveProjects(projects);
 
-    // Save project data including the parsed data so it can be restored
-    localStorage.setItem(`datalens_project_${projectId}`, JSON.stringify({
+    localStorage.setItem(`cognilytix_project_${projectId}`, JSON.stringify({
       charts,
       summaryText,
       fileName,
