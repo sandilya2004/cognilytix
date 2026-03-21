@@ -141,57 +141,55 @@ export default function Dashboard() {
       const pdf = new jsPDF({ orientation: "landscape" });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
-      const margin = 8;
-      const gap = 5;
+      const margin = 10;
+      const gap = 6;
       const cols = 2;
-      const cellW = (pageW - margin * 2 - gap) / cols;
-      const cellH = (pageH - margin * 2 - gap) / 2;
+      const rows = 2;
+      const cellW = (pageW - margin * 2 - gap * (cols - 1)) / cols;
+      const cellH = (pageH - margin * 2 - gap * (rows - 1)) / rows;
+      const perPage = cols * rows;
 
-      // Collect all chart images at high resolution
-      const images: { data: string; w: number; h: number }[] = [];
+      // Capture each chart at high resolution with extra padding to avoid cutoff
+      const images: string[] = [];
       for (let i = 0; i < chartEls.length; i++) {
         const el = chartEls[i] as HTMLElement;
+        // Temporarily add padding to prevent text cutoff
+        const origPadding = el.style.padding;
+        el.style.padding = "12px";
         const canvas = await html2canvas(el, {
           backgroundColor: "#ffffff",
-          scale: 3,
+          scale: 4,
           useCORS: true,
           logging: false,
-          windowWidth: el.scrollWidth,
-          windowHeight: el.scrollHeight,
+          width: el.scrollWidth + 24,
+          height: el.scrollHeight + 24,
         });
-        images.push({ data: canvas.toDataURL("image/png", 1.0), w: canvas.width, h: canvas.height });
+        el.style.padding = origPadding;
+        images.push(canvas.toDataURL("image/png", 1.0));
       }
 
-      // Place charts in 2x2 grid per page
-      const perPage = 4;
+      // Place charts in 2x2 grid, adding pages as needed
       for (let i = 0; i < images.length; i++) {
         const posInPage = i % perPage;
         if (i > 0 && posInPage === 0) pdf.addPage();
 
         const col = posInPage % cols;
         const row = Math.floor(posInPage / cols);
-        const cellX = margin + col * (cellW + gap);
-        const cellY = margin + row * (cellH + gap);
+        const x = margin + col * (cellW + gap);
+        const y = margin + row * (cellH + gap);
 
-        const img = images[i];
-        const imgRatio = img.w / img.h;
-        let w = cellW;
-        let h = w / imgRatio;
-        if (h > cellH) { h = cellH; w = h * imgRatio; }
-        const x = cellX + (cellW - w) / 2;
-        const y = cellY + (cellH - h) / 2;
-        pdf.addImage(img.data, "PNG", x, y, w, h);
+        pdf.addImage(images[i], "PNG", x, y, cellW, cellH);
       }
 
-      // Summary on its own page
+      // Summary on next page
       if (summaryEl) {
         pdf.addPage();
         const summaryCanvas = await html2canvas(summaryEl as HTMLElement, {
           backgroundColor: "#ffffff",
-          scale: 3,
+          scale: 4,
           useCORS: true,
           logging: false,
-          width: (summaryEl as HTMLElement).scrollWidth,
+          width: (summaryEl as HTMLElement).scrollWidth + 20,
         });
         const imgData = summaryCanvas.toDataURL("image/png", 1.0);
         const imgRatio = summaryCanvas.width / summaryCanvas.height;
