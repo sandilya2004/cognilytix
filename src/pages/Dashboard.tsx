@@ -49,6 +49,10 @@ export default function Dashboard() {
     setSlicerFilters({});
   }, []);
 
+  const handleDataChange = useCallback((newData: ParsedData) => {
+    setData(newData);
+  }, []);
+
   const handlePrompt = useCallback(
     async (prompt: string) => {
       if (!data) return;
