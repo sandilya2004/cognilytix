@@ -129,31 +129,37 @@ export default function Dashboard() {
     const summaryEl = document.querySelector("#summary-panel");
     if (chartEls.length === 0 && !summaryEl) return;
 
-    toast.info("Generating PDF with all visuals…");
+    toast.info("Generating high-quality PDF…");
     try {
       const { default: html2canvas } = await import("html2canvas");
       const { default: jsPDF } = await import("jspdf");
       const pdf = new jsPDF({ orientation: "landscape" });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
-      const margin = 10;
-      const gap = 6;
+      const margin = 8;
+      const gap = 5;
       const cols = 2;
       const cellW = (pageW - margin * 2 - gap) / cols;
-      const cellH = (pageH - margin * 2 - gap) / 2; // 2 rows per page
+      const cellH = (pageH - margin * 2 - gap) / 2;
 
-      // Collect all images first
+      // Collect all chart images at high resolution
       const images: { data: string; w: number; h: number }[] = [];
       for (let i = 0; i < chartEls.length; i++) {
         const el = chartEls[i] as HTMLElement;
-        const canvas = await html2canvas(el, { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false });
-        images.push({ data: canvas.toDataURL("image/png"), w: canvas.width, h: canvas.height });
+        const canvas = await html2canvas(el, {
+          backgroundColor: "#ffffff",
+          scale: 3,
+          useCORS: true,
+          logging: false,
+          windowWidth: el.scrollWidth,
+          windowHeight: el.scrollHeight,
+        });
+        images.push({ data: canvas.toDataURL("image/png", 1.0), w: canvas.width, h: canvas.height });
       }
 
       // Place charts in 2x2 grid per page
       const perPage = 4;
       for (let i = 0; i < images.length; i++) {
-        const pageIdx = Math.floor(i / perPage);
         const posInPage = i % perPage;
         if (i > 0 && posInPage === 0) pdf.addPage();
 
@@ -175,8 +181,14 @@ export default function Dashboard() {
       // Summary on its own page
       if (summaryEl) {
         pdf.addPage();
-        const summaryCanvas = await html2canvas(summaryEl as HTMLElement, { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false });
-        const imgData = summaryCanvas.toDataURL("image/png");
+        const summaryCanvas = await html2canvas(summaryEl as HTMLElement, {
+          backgroundColor: "#ffffff",
+          scale: 3,
+          useCORS: true,
+          logging: false,
+          width: (summaryEl as HTMLElement).scrollWidth,
+        });
+        const imgData = summaryCanvas.toDataURL("image/png", 1.0);
         const imgRatio = summaryCanvas.width / summaryCanvas.height;
         const usableW = pageW - margin * 2;
         const usableH = pageH - margin * 2;
@@ -186,7 +198,7 @@ export default function Dashboard() {
         pdf.addImage(imgData, "PNG", margin + (usableW - w) / 2, margin, w, h);
       }
 
-      pdf.save("dashboard.pdf");
+      pdf.save("cognilytix_dashboard.pdf");
       toast.success("PDF exported with all visuals & summary!");
     } catch {
       toast.error("PDF export failed. Try again.");

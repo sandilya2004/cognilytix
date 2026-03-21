@@ -147,18 +147,49 @@ export default function ChartCard({ config, onRemove, filteredData, slicerFilter
           </ResponsiveContainer>
         );
 
-      case "pie":
+      case "pie": {
+        const RADIAN = Math.PI / 180;
+        const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: any) => {
+          const radius = outerRadius + 20;
+          const x = cx + radius * Math.cos(-midAngle * RADIAN);
+          const y = cy + radius * Math.sin(-midAngle * RADIAN);
+          if (percent < 0.03) return null;
+          return (
+            <text x={x} y={y} fill="hsl(220, 9%, 46%)" textAnchor={x > cx ? "start" : "end"} dominantBaseline="central" fontSize={11}>
+              {`${name} (${(percent * 100).toFixed(1)}%)`}
+            </text>
+          );
+        };
         return (
-          <ResponsiveContainer width="100%" height={280}>
+          <ResponsiveContainer width="100%" height={320}>
             <PieChart>
-              <Pie data={data} dataKey={config.valueKey!} nameKey={config.labelKey!} cx="50%" cy="50%" outerRadius={100}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+              <Pie
+                data={data}
+                dataKey={config.valueKey!}
+                nameKey={config.labelKey!}
+                cx="50%"
+                cy="45%"
+                outerRadius={85}
+                innerRadius={30}
+                paddingAngle={2}
+                label={renderCustomLabel}
+                labelLine={{ stroke: "hsl(220, 13%, 80%)", strokeWidth: 1 }}
+              >
                 {data.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Pie>
-              <Tooltip /><Legend />
+              <Tooltip formatter={(value: number) => value.toLocaleString()} />
+              <Legend
+                layout="horizontal"
+                align="center"
+                verticalAlign="bottom"
+                iconSize={8}
+                iconType="circle"
+                wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
+              />
             </PieChart>
           </ResponsiveContainer>
         );
+      }
 
       case "scatter":
         return (
