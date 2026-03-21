@@ -43,7 +43,7 @@ export default function SummaryPanel({ summaryText }: SummaryPanelProps) {
           {copied ? "Copied" : "Copy"}
         </Button>
       </div>
-      <div className="p-5 max-h-[500px] overflow-y-auto">
+      <div className="p-5">
         {renderMarkdown(summaryText)}
       </div>
     </div>

@@ -288,6 +288,7 @@ export default function Dashboard() {
         ) : (
           <>
             <DataPreview data={data} fileName={fileName} />
+            <SpreadsheetEditor data={data} onDataChange={handleDataChange} />
             <VisualPicker onSelect={handleVisualPick} />
           </>
         )}
