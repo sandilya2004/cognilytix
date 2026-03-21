@@ -7,6 +7,7 @@ import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import Pricing from "./pages/Pricing";
+import Payment from "./pages/Payment";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
