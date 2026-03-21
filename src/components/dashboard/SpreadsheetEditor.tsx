@@ -62,7 +62,7 @@ export default function SpreadsheetEditor({ data, onDataChange }: SpreadsheetEdi
     const name = newColName.trim();
     const newCols = [...data.columns, { name, type: "string" as const }];
     const newRows = data.rows.map(r => ({ ...r, [name]: "" }));
-    onDataChange({ columns: newCols, rows: newRows });
+    onDataChange({ columns: newCols, rows: newRows, rawHeaders: [...data.rawHeaders, name] });
     setNewColName("");
     setShowAddCol(false);
   }, [data, onDataChange, newColName]);
