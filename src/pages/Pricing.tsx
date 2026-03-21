@@ -118,7 +118,8 @@ export default function Pricing() {
                 className="mt-8 w-full"
                 onClick={() => {
                   if (plan.name === "Free Trial") navigate("/dashboard");
-                  else navigate("/pricing");
+                  else if (plan.name === "Business") navigate("/payment?plan=Business");
+                  else navigate("/payment?plan=Pro");
                 }}
               >
                 {plan.cta}
