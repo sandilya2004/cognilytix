@@ -80,7 +80,7 @@ export default function FileUpload({ onDataLoaded }: FileUploadProps) {
           <div className="h-1.5 w-32 rounded-full bg-amber-200 overflow-hidden">
             <div className="h-full rounded-full bg-amber-500 transition-all" style={{ width: `${((30 - trialDaysLeft) / 30) * 100}%` }} />
           </div>
-          <a href="/pricing" className="text-xs font-medium text-primary hover:underline">Upgrade</a>
+          <a href="/payment?plan=Pro" className="text-xs font-medium text-primary hover:underline">Upgrade</a>
         </div>
       </div>
 
