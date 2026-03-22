@@ -471,8 +471,11 @@ export default function ChartCard({ config, onRemove, filteredData, slicerFilter
   return (
     <div ref={ref} className="rounded-lg border border-border bg-card overflow-hidden animate-fade-up">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <h4 className="font-medium text-foreground text-sm">{config.title}</h4>
-        <div className="flex items-center gap-1">
+        <h4 className="font-medium text-foreground text-sm truncate mr-2">{config.title}</h4>
+        <div className="flex items-center gap-1 shrink-0">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={generateExplanation} title="Explain">
+            <MessageSquareText className={`h-3.5 w-3.5 ${explanation ? "text-primary" : ""}`} />
+          </Button>
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowCode(showCode === "sql" ? "none" : "sql")} title="SQL Code">
             <Database className="h-3.5 w-3.5" />
           </Button>
@@ -487,6 +490,16 @@ export default function ChartCard({ config, onRemove, filteredData, slicerFilter
           </Button>
         </div>
       </div>
+      {explaining && (
+        <div className="px-4 py-2 border-b border-border bg-primary/5">
+          <p className="text-xs text-muted-foreground animate-pulse">Analyzing chart...</p>
+        </div>
+      )}
+      {explanation && (
+        <div className="px-4 py-3 border-b border-border bg-primary/5">
+          <p className="text-xs text-foreground leading-relaxed" dangerouslySetInnerHTML={{ __html: explanation.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }} />
+        </div>
+      )}
       {showCode !== "none" && config.sqlCode && config.pythonCode && (
         <div className="border-b border-border bg-muted/30 px-4 py-3">
           <div className="flex items-center gap-2 mb-2">
