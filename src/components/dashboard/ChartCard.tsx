@@ -30,7 +30,36 @@ interface ChartCardProps {
 export default function ChartCard({ config, onRemove, filteredData, slicerFilters, onSlicerToggle }: ChartCardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [showCode, setShowCode] = useState<"none" | "sql" | "python">("none");
+  const [explanation, setExplanation] = useState<string | null>(null);
+  const [explaining, setExplaining] = useState(false);
 
+  const generateExplanation = () => {
+    if (explanation) { setExplanation(null); return; }
+    setExplaining(true);
+    setTimeout(() => {
+      const { type, title, xKey, yKey, data, kpiValue, kpiLabel } = config;
+      let text = "";
+      if (type === "kpi" || type === "card") {
+        text = `This KPI card shows that the **${kpiLabel}** is **${kpiValue}**. This metric provides a quick snapshot of overall performance. Monitor this value over time to spot improvement or decline.`;
+      } else if (type === "pie") {
+        const topItem = data[0]?.[xKey!];
+        text = `This pie chart visualizes the proportion of **${yKey}** across different **${xKey}** categories. **${topItem}** holds the largest share. Use this to identify which segments dominate and where there may be untapped opportunities.`;
+      } else if (type === "line" || type === "area") {
+        const vals = data.map(d => Number(d[yKey!]) || 0);
+        const trend = vals.length > 1 && vals[vals.length - 1] > vals[0] ? "upward" : "downward or flat";
+        text = `This ${type} chart tracks **${yKey}** over **${xKey}**, revealing a **${trend} trend**. The pattern helps identify growth momentum or declining performance that needs attention.`;
+      } else if (type === "scatter") {
+        text = `This scatter plot examines the relationship between **${xKey}** and **${yKey}**. Clusters of points may indicate correlations, while outliers could signal anomalies worth investigating.`;
+      } else if (type === "table" || type === "matrix") {
+        text = `This table summarizes key data points, sorted to highlight the most significant values in **${yKey}**. Use it as a reference for detailed analysis or to identify specific records of interest.`;
+      } else {
+        const topVal = [...data].sort((a, b) => (Number(b[yKey!]) || 0) - (Number(a[yKey!]) || 0))[0];
+        text = `"${title}" compares **${yKey}** across **${xKey}** categories. **${topVal?.[xKey!]}** leads with the highest value. This visualization helps identify top performers and areas needing improvement.`;
+      }
+      setExplanation(text);
+      setExplaining(false);
+    }, 500);
+  };
   const handleExportPNG = async () => {
     if (!ref.current) return;
     const { default: html2canvas } = await import("html2canvas");
