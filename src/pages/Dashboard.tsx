@@ -263,9 +263,6 @@ export default function Dashboard() {
               {/* Visual Picker */}
               <VisualPicker onSelect={handleVisualPick} />
 
-              {/* Data preview + editor (collapsible) */}
-              <DataPreview data={data} fileName={fileName} />
-              <SpreadsheetEditor data={data} onDataChange={handleDataChange} />
 
               {/* Summary */}
               {summaryText && (
