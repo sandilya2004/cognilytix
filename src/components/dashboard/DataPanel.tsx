@@ -102,6 +102,12 @@ export default function DataPanel({ data, fileName, onUploadClick }: DataPanelPr
           </table>
         </div>
       </div>
+
+      {/* Analyze button */}
+      <Button className="w-full" size="sm" onClick={onUploadClick}>
+        <Database className="h-3.5 w-3.5 mr-1.5" />
+        Analyze Data
+      </Button>
     </div>
   );
 }
