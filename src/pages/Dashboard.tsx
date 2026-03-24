@@ -3,8 +3,6 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Brain, FileDown, FileText, FolderOpen, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FileUpload from "@/components/dashboard/FileUpload";
-import DataPreview from "@/components/dashboard/DataPreview";
-import SpreadsheetEditor from "@/components/dashboard/SpreadsheetEditor";
 import PromptBar from "@/components/dashboard/PromptBar";
 import ChartCard from "@/components/dashboard/ChartCard";
 import VisualPicker from "@/components/dashboard/VisualPicker";
