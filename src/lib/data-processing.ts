@@ -71,6 +71,67 @@ export function parseCSV(file: File): Promise<ParsedData> {
   });
 }
 
+export interface SheetInfo {
+  name: string;
+  rowCount: number;
+  colCount: number;
+  preview: Record<string, unknown>[];
+  columns: DataColumn[];
+}
+
+export function getExcelSheets(file: File): Promise<SheetInfo[]> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const wb = XLSX.read(e.target?.result, { type: "array" });
+        const sheets: SheetInfo[] = wb.SheetNames.map((name) => {
+          const sheet = wb.Sheets[name];
+          const raw = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1 }) as unknown[][];
+          if (raw.length < 1) return { name, rowCount: 0, colCount: 0, preview: [], columns: [] };
+          const headers = cleanHeaders(raw[0].map(String));
+          const rows = rowsFromSheet(raw);
+          const columns: DataColumn[] = headers.map((h) => ({
+            name: h,
+            type: detectType(rows.map((r) => r[h])),
+          }));
+          return { name, rowCount: rows.length, colCount: headers.length, preview: rows.slice(0, 3), columns };
+        });
+        resolve(sheets);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+export function parseExcelSheet(file: File, sheetName: string): Promise<ParsedData> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const wb = XLSX.read(e.target?.result, { type: "array" });
+        const sheet = wb.Sheets[sheetName];
+        if (!sheet) throw new Error(`Sheet "${sheetName}" not found`);
+        const data = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1 });
+        const headers = cleanHeaders((data[0] as unknown[]).map(String));
+        const rows = rowsFromSheet(data as unknown[][]);
+        const columns: DataColumn[] = headers.map((name) => ({
+          name,
+          type: detectType(rows.map((r) => r[name])),
+        }));
+        resolve({ columns, rows, rawHeaders: headers });
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
 export function parseExcel(file: File): Promise<ParsedData> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -94,6 +155,7 @@ export function parseExcel(file: File): Promise<ParsedData> {
     reader.readAsArrayBuffer(file);
   });
 }
+
 
 export async function parseFile(file: File): Promise<ParsedData> {
   const ext = file.name.split(".").pop()?.toLowerCase();
