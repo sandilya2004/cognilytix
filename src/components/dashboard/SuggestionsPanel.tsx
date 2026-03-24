@@ -14,6 +14,7 @@ const defaultSuggestions = [
   { icon: Table2, label: "Data summary", prompt: "Show data summary table" },
   { icon: Layers, label: "Stacked view", prompt: "Create a stacked column chart" },
   { icon: Filter, label: "Add slicer", prompt: "Create a slicer filter" },
+  { icon: BarChart3, label: "Compare regions", prompt: "Compare values across regions as bar chart" },
 ];
 
 export default function SuggestionsPanel({ data, onPrompt }: SuggestionsPanelProps) {
