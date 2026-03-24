@@ -133,7 +133,27 @@ export function parseExcelSheet(file: File, sheetName: string): Promise<ParsedDa
 }
 
 export function parseExcel(file: File): Promise<ParsedData> {
-  return parseExcelSheet(file, "");
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const wb = XLSX.read(e.target?.result, { type: "array" });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1 });
+        const headers = cleanHeaders((data[0] as unknown[]).map(String));
+        const rows = rowsFromSheet(data as unknown[][]);
+        const columns: DataColumn[] = headers.map((name) => ({
+          name,
+          type: detectType(rows.map((r) => r[name])),
+        }));
+        resolve({ columns, rows, rawHeaders: headers });
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
 }
 
 
