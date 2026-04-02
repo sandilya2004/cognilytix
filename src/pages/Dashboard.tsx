@@ -30,6 +30,9 @@ export default function Dashboard() {
   const [summaryText, setSummaryText] = useState("");
   const [slicerFilters, setSlicerFilters] = useState<Record<string, Set<string>>>({});
   const [showSheetSelector, setShowSheetSelector] = useState(false);
+  const [sheetSelectorOpen, setSheetSelectorOpen] = useState(false);
+  const [excelSheets, setExcelSheets] = useState<SheetInfo[]>([]);
+  const [excelFile, setExcelFile] = useState<File | null>(null);
   const uploadRef = useRef<HTMLDivElement>(null);
 
   // Restore saved project on mount
