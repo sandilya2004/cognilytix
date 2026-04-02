@@ -18,7 +18,7 @@ const typeBadge: Record<string, string> = {
   boolean: "bg-chart-4/10 text-chart-4 border-chart-4/20",
 };
 
-export default function DataPanel({ data, fileName, onUploadClick }: DataPanelProps) {
+export default function DataPanel({ data, fileName, onUploadClick, onSheetSelectorClick, showSheetSelector }: DataPanelProps) {
   if (!data) {
     return (
       <div className="rounded-lg border border-border bg-card p-4 text-center space-y-3">
