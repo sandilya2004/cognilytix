@@ -1,4 +1,4 @@
-import { Database, FileSpreadsheet, Upload } from "lucide-react";
+import { Database, FileSpreadsheet, Layers, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ParsedData } from "@/lib/data-processing";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,8 @@ interface DataPanelProps {
   data: ParsedData | null;
   fileName: string;
   onUploadClick: () => void;
+  onSheetSelectorClick?: () => void;
+  showSheetSelector?: boolean;
 }
 
 const typeBadge: Record<string, string> = {
