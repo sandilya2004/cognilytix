@@ -10,6 +10,7 @@ import SummaryPanel from "@/components/dashboard/SummaryPanel";
 import InsightsPanel from "@/components/dashboard/InsightsPanel";
 import SuggestionsPanel from "@/components/dashboard/SuggestionsPanel";
 import DataPanel from "@/components/dashboard/DataPanel";
+import DataHealthCheck from "@/components/dashboard/DataHealthCheck";
 import type { ParsedData } from "@/lib/data-processing";
 import type { ChartConfig, ChartType } from "@/lib/chart-types";
 import { interpretPrompt, createFromType } from "@/lib/local-ai";
@@ -26,6 +27,7 @@ export default function Dashboard() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [summaryText, setSummaryText] = useState("");
   const [slicerFilters, setSlicerFilters] = useState<Record<string, Set<string>>>({});
+  const [showSheetSelector, setShowSheetSelector] = useState(false);
   const uploadRef = useRef<HTMLDivElement>(null);
 
   // Restore saved project on mount
@@ -49,6 +51,7 @@ export default function Dashboard() {
     setCharts([]);
     setSummaryText("");
     setSlicerFilters({});
+    setShowSheetSelector(name.includes(" — ") || /\.xlsx?$/i.test(name));
   }, []);
 
   const handleDataChange = useCallback((newData: ParsedData) => {
@@ -246,7 +249,16 @@ export default function Dashboard() {
       <div className="flex h-[calc(100vh-7.5rem)]">
         {/* LEFT: Data panel */}
         <aside className="w-64 border-r border-border bg-card/30 p-3 overflow-y-auto shrink-0 hidden lg:block">
-          <DataPanel data={data} fileName={fileName} onUploadClick={scrollToUpload} />
+          <DataPanel
+            data={data}
+            fileName={fileName}
+            onUploadClick={scrollToUpload}
+            showSheetSelector={showSheetSelector}
+            onSheetSelectorClick={() => {
+              setData(null);
+              setShowSheetSelector(false);
+            }}
+          />
         </aside>
 
         {/* CENTER: Main content */}
@@ -257,6 +269,9 @@ export default function Dashboard() {
             </div>
           ) : (
             <>
+              {/* Data Health Check */}
+              <DataHealthCheck data={data} onDataFixed={handleDataChange} />
+
               {/* Insights auto-generated */}
               <InsightsPanel data={data} />
 

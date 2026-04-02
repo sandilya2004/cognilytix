@@ -1,4 +1,4 @@
-import { Database, FileSpreadsheet, Upload } from "lucide-react";
+import { Database, FileSpreadsheet, Layers, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ParsedData } from "@/lib/data-processing";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,8 @@ interface DataPanelProps {
   data: ParsedData | null;
   fileName: string;
   onUploadClick: () => void;
+  onSheetSelectorClick?: () => void;
+  showSheetSelector?: boolean;
 }
 
 const typeBadge: Record<string, string> = {
@@ -16,7 +18,7 @@ const typeBadge: Record<string, string> = {
   boolean: "bg-chart-4/10 text-chart-4 border-chart-4/20",
 };
 
-export default function DataPanel({ data, fileName, onUploadClick }: DataPanelProps) {
+export default function DataPanel({ data, fileName, onUploadClick, onSheetSelectorClick, showSheetSelector }: DataPanelProps) {
   if (!data) {
     return (
       <div className="rounded-lg border border-border bg-card p-4 text-center space-y-3">
@@ -102,6 +104,14 @@ export default function DataPanel({ data, fileName, onUploadClick }: DataPanelPr
           </table>
         </div>
       </div>
+
+      {/* Sheet Selector button */}
+      {showSheetSelector && (
+        <Button className="w-full" size="sm" variant="outline" onClick={onSheetSelectorClick}>
+          <Layers className="h-3.5 w-3.5 mr-1.5" />
+          Sheet Selector
+        </Button>
+      )}
 
       {/* Analyze button */}
       <Button className="w-full" size="sm" onClick={onUploadClick}>
