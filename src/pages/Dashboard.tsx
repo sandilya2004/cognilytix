@@ -269,6 +269,9 @@ export default function Dashboard() {
             </div>
           ) : (
             <>
+              {/* Data Health Check */}
+              <DataHealthCheck data={data} onDataFixed={handleDataChange} />
+
               {/* Insights auto-generated */}
               <InsightsPanel data={data} />
 
