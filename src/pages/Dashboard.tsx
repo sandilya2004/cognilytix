@@ -266,8 +266,17 @@ export default function Dashboard() {
         {/* CENTER: Main content */}
         <main className="flex-1 overflow-y-auto p-4 space-y-4">
           {!data ? (
-            <div ref={uploadRef}>
-              <FileUpload onDataLoaded={handleDataLoaded} />
+             <div ref={uploadRef}>
+              <FileUpload
+                onDataLoaded={handleDataLoaded}
+                onSheetsDetected={(sheets, file, name) => {
+                  setExcelSheets(sheets);
+                  setExcelFile(file);
+                  setFileName(name);
+                  setShowSheetSelector(true);
+                  setSheetSelectorOpen(true);
+                }}
+              />
             </div>
           ) : (
             <>
