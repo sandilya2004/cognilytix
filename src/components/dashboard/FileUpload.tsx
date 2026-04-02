@@ -45,6 +45,7 @@ export default function FileUpload({ onDataLoaded, onSheetsDetected }: FileUploa
             setSheets(sheetList);
             setSelectedSheet(sheetList[0].name);
             setExcelFile(file);
+            onSheetsDetected?.(sheetList, file, file.name);
             setIsLoading(false);
             return;
           }
