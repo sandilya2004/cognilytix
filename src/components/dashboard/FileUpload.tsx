@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 interface FileUploadProps {
   onDataLoaded: (data: ParsedData, fileName: string) => void;
+  onSheetsDetected?: (sheets: SheetInfo[], file: File, fileName: string) => void;
 }
 
 const FILE_TYPES = [
