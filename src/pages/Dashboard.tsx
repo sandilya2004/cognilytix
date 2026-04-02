@@ -344,6 +344,22 @@ export default function Dashboard() {
           <SuggestionsPanel data={data} onPrompt={handlePrompt} />
         </aside>
       </div>
+
+      {/* Sheet Selector Dialog */}
+      <SheetSelectorDialog
+        open={sheetSelectorOpen}
+        onOpenChange={setSheetSelectorOpen}
+        sheets={excelSheets}
+        file={excelFile}
+        fileName={fileName}
+        onSheetLoaded={(parsedData, name) => {
+          setData(parsedData);
+          setFileName(name);
+          setCharts([]);
+          setSummaryText("");
+          setSlicerFilters({});
+        }}
+      />
     </div>
   );
 }
