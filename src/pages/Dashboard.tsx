@@ -10,6 +10,7 @@ import SummaryPanel from "@/components/dashboard/SummaryPanel";
 import InsightsPanel from "@/components/dashboard/InsightsPanel";
 import SuggestionsPanel from "@/components/dashboard/SuggestionsPanel";
 import DataPanel from "@/components/dashboard/DataPanel";
+import DataHealthCheck from "@/components/dashboard/DataHealthCheck";
 import type { ParsedData } from "@/lib/data-processing";
 import type { ChartConfig, ChartType } from "@/lib/chart-types";
 import { interpretPrompt, createFromType } from "@/lib/local-ai";
@@ -26,6 +27,7 @@ export default function Dashboard() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [summaryText, setSummaryText] = useState("");
   const [slicerFilters, setSlicerFilters] = useState<Record<string, Set<string>>>({});
+  const [showSheetSelector, setShowSheetSelector] = useState(false);
   const uploadRef = useRef<HTMLDivElement>(null);
 
   // Restore saved project on mount
