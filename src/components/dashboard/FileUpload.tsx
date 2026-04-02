@@ -22,7 +22,7 @@ function isExcelFile(name: string) {
   return ext === "xlsx" || ext === "xls";
 }
 
-export default function FileUpload({ onDataLoaded }: FileUploadProps) {
+export default function FileUpload({ onDataLoaded, onSheetsDetected }: FileUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
