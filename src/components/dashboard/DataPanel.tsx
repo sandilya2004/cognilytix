@@ -105,6 +105,14 @@ export default function DataPanel({ data, fileName, onUploadClick, onSheetSelect
         </div>
       </div>
 
+      {/* Sheet Selector button */}
+      {showSheetSelector && (
+        <Button className="w-full" size="sm" variant="outline" onClick={onSheetSelectorClick}>
+          <Layers className="h-3.5 w-3.5 mr-1.5" />
+          Sheet Selector
+        </Button>
+      )}
+
       {/* Analyze button */}
       <Button className="w-full" size="sm" onClick={onUploadClick}>
         <Database className="h-3.5 w-3.5 mr-1.5" />
