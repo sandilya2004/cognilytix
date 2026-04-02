@@ -51,6 +51,7 @@ export default function Dashboard() {
     setCharts([]);
     setSummaryText("");
     setSlicerFilters({});
+    setShowSheetSelector(name.includes(" — ") || /\.xlsx?$/i.test(name));
   }, []);
 
   const handleDataChange = useCallback((newData: ParsedData) => {
