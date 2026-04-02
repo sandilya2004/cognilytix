@@ -259,10 +259,7 @@ export default function Dashboard() {
             fileName={fileName}
             onUploadClick={scrollToUpload}
             showSheetSelector={showSheetSelector}
-            onSheetSelectorClick={() => {
-              setData(null);
-              setShowSheetSelector(false);
-            }}
+            onSheetSelectorClick={() => setSheetSelectorOpen(true)}
           />
         </aside>
 
