@@ -11,7 +11,9 @@ import InsightsPanel from "@/components/dashboard/InsightsPanel";
 import SuggestionsPanel from "@/components/dashboard/SuggestionsPanel";
 import DataPanel from "@/components/dashboard/DataPanel";
 import DataHealthCheck from "@/components/dashboard/DataHealthCheck";
+import SheetSelectorDialog from "@/components/dashboard/SheetSelectorDialog";
 import type { ParsedData } from "@/lib/data-processing";
+import type { SheetInfo } from "@/lib/data-processing";
 import type { ChartConfig, ChartType } from "@/lib/chart-types";
 import { interpretPrompt, createFromType } from "@/lib/local-ai";
 import { generateSummary } from "@/lib/summarize";
@@ -28,6 +30,9 @@ export default function Dashboard() {
   const [summaryText, setSummaryText] = useState("");
   const [slicerFilters, setSlicerFilters] = useState<Record<string, Set<string>>>({});
   const [showSheetSelector, setShowSheetSelector] = useState(false);
+  const [sheetSelectorOpen, setSheetSelectorOpen] = useState(false);
+  const [excelSheets, setExcelSheets] = useState<SheetInfo[]>([]);
+  const [excelFile, setExcelFile] = useState<File | null>(null);
   const uploadRef = useRef<HTMLDivElement>(null);
 
   // Restore saved project on mount
@@ -254,18 +259,24 @@ export default function Dashboard() {
             fileName={fileName}
             onUploadClick={scrollToUpload}
             showSheetSelector={showSheetSelector}
-            onSheetSelectorClick={() => {
-              setData(null);
-              setShowSheetSelector(false);
-            }}
+            onSheetSelectorClick={() => setSheetSelectorOpen(true)}
           />
         </aside>
 
         {/* CENTER: Main content */}
         <main className="flex-1 overflow-y-auto p-4 space-y-4">
           {!data ? (
-            <div ref={uploadRef}>
-              <FileUpload onDataLoaded={handleDataLoaded} />
+             <div ref={uploadRef}>
+              <FileUpload
+                onDataLoaded={handleDataLoaded}
+                onSheetsDetected={(sheets, file, name) => {
+                  setExcelSheets(sheets);
+                  setExcelFile(file);
+                  setFileName(name);
+                  setShowSheetSelector(true);
+                  setSheetSelectorOpen(true);
+                }}
+              />
             </div>
           ) : (
             <>
@@ -333,6 +344,22 @@ export default function Dashboard() {
           <SuggestionsPanel data={data} onPrompt={handlePrompt} />
         </aside>
       </div>
+
+      {/* Sheet Selector Dialog */}
+      <SheetSelectorDialog
+        open={sheetSelectorOpen}
+        onOpenChange={setSheetSelectorOpen}
+        sheets={excelSheets}
+        file={excelFile}
+        fileName={fileName}
+        onSheetLoaded={(parsedData, name) => {
+          setData(parsedData);
+          setFileName(name);
+          setCharts([]);
+          setSummaryText("");
+          setSlicerFilters({});
+        }}
+      />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 interface FileUploadProps {
   onDataLoaded: (data: ParsedData, fileName: string) => void;
+  onSheetsDetected?: (sheets: SheetInfo[], file: File, fileName: string) => void;
 }
 
 const FILE_TYPES = [
@@ -21,7 +22,7 @@ function isExcelFile(name: string) {
   return ext === "xlsx" || ext === "xls";
 }
 
-export default function FileUpload({ onDataLoaded }: FileUploadProps) {
+export default function FileUpload({ onDataLoaded, onSheetsDetected }: FileUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -44,6 +45,7 @@ export default function FileUpload({ onDataLoaded }: FileUploadProps) {
             setSheets(sheetList);
             setSelectedSheet(sheetList[0].name);
             setExcelFile(file);
+            onSheetsDetected?.(sheetList, file, file.name);
             setIsLoading(false);
             return;
           }
