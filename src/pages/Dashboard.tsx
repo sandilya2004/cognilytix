@@ -249,7 +249,16 @@ export default function Dashboard() {
       <div className="flex h-[calc(100vh-7.5rem)]">
         {/* LEFT: Data panel */}
         <aside className="w-64 border-r border-border bg-card/30 p-3 overflow-y-auto shrink-0 hidden lg:block">
-          <DataPanel data={data} fileName={fileName} onUploadClick={scrollToUpload} />
+          <DataPanel
+            data={data}
+            fileName={fileName}
+            onUploadClick={scrollToUpload}
+            showSheetSelector={showSheetSelector}
+            onSheetSelectorClick={() => {
+              setData(null);
+              setShowSheetSelector(false);
+            }}
+          />
         </aside>
 
         {/* CENTER: Main content */}
