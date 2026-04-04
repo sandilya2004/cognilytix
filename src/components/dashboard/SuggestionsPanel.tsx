@@ -1,4 +1,4 @@
-import { Sparkles, TrendingUp, BarChart3, PieChart, Activity, Table2, Layers, Filter } from "lucide-react";
+import { Sparkles, TrendingUp, BarChart3, PieChart, Activity, Table2, Layers, Filter, LineChart, Hash } from "lucide-react";
 import type { ParsedData } from "@/lib/data-processing";
 
 interface SuggestionsPanelProps {
@@ -15,6 +15,8 @@ const defaultSuggestions = [
   { icon: Layers, label: "Stacked view", prompt: "Create a stacked column chart" },
   { icon: Filter, label: "Add slicer", prompt: "Create a slicer filter" },
   { icon: BarChart3, label: "Compare regions", prompt: "Compare values across regions as bar chart" },
+  { icon: LineChart, label: "Area chart", prompt: "Create an area chart" },
+  { icon: Hash, label: "KPI card", prompt: "Show total as KPI card" },
 ];
 
 export default function SuggestionsPanel({ data, onPrompt }: SuggestionsPanelProps) {
@@ -26,22 +28,19 @@ export default function SuggestionsPanel({ data, onPrompt }: SuggestionsPanelPro
 
         if (strCols[0] && numCols[0]) {
           suggestions.push({
-            icon: BarChart3,
-            label: `${numCols[0]} by ${strCols[0]}`,
+            icon: BarChart3, label: `${numCols[0]} by ${strCols[0]}`,
             prompt: `Bar chart of ${numCols[0]} by ${strCols[0]}`,
           });
         }
         if (numCols[0]) {
           suggestions.push({
-            icon: TrendingUp,
-            label: `${numCols[0]} trend`,
+            icon: TrendingUp, label: `${numCols[0]} trend`,
             prompt: `Show ${numCols[0]} trend as line chart`,
           });
         }
         if (strCols[0] && numCols[0]) {
           suggestions.push({
-            icon: PieChart,
-            label: `${strCols[0]} breakdown`,
+            icon: PieChart, label: `${strCols[0]} breakdown`,
             prompt: `Distribution of ${numCols[0]} by ${strCols[0]} as pie chart`,
           });
         }
@@ -58,35 +57,39 @@ export default function SuggestionsPanel({ data, onPrompt }: SuggestionsPanelPro
       <div className="p-3 space-y-1.5">
         {dynamicSuggestions.length > 0 && (
           <>
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold px-1 mb-1">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold px-1 mb-2">
               For your data
             </p>
-            {dynamicSuggestions.map((s, i) => (
-              <button
-                key={`d-${i}`}
-                onClick={() => onPrompt(s.prompt)}
-                className="flex items-center gap-2.5 w-full rounded-md px-3 py-2 text-left text-xs text-foreground hover:bg-primary/5 hover:text-primary transition-colors group"
-              >
-                <s.icon className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
-                {s.label}
-              </button>
-            ))}
+            <div className="flex flex-wrap gap-2 mb-3">
+              {dynamicSuggestions.map((s, i) => (
+                <button
+                  key={`d-${i}`}
+                  onClick={() => onPrompt(s.prompt)}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs text-foreground hover:border-primary hover:bg-primary/5 hover:text-primary transition-colors"
+                >
+                  <s.icon className="h-3 w-3" />
+                  {s.label}
+                </button>
+              ))}
+            </div>
             <div className="border-t border-border my-2" />
           </>
         )}
-        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold px-1 mb-1">
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold px-1 mb-2">
           Common queries
         </p>
-        {defaultSuggestions.map((s, i) => (
-          <button
-            key={i}
-            onClick={() => onPrompt(s.prompt)}
-            className="flex items-center gap-2.5 w-full rounded-md px-3 py-2 text-left text-xs text-foreground hover:bg-primary/5 hover:text-primary transition-colors group"
-          >
-            <s.icon className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
-            {s.label}
-          </button>
-        ))}
+        <div className="flex flex-wrap gap-2">
+          {defaultSuggestions.map((s, i) => (
+            <button
+              key={i}
+              onClick={() => onPrompt(s.prompt)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs text-foreground hover:border-primary hover:bg-primary/5 hover:text-primary transition-colors"
+            >
+              <s.icon className="h-3 w-3" />
+              {s.label}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
