@@ -8,7 +8,7 @@ const features = [
   {
     icon: Upload,
     title: "Upload Any Dataset",
-    description: "CSV, Excel, Google Sheets, or PDF tables — we handle them all with automatic column detection.",
+    description: "CSV or Excel files — we handle them all with automatic column detection and cleaning.",
   },
   {
     icon: Sparkles,
@@ -52,11 +52,8 @@ export default function LandingPage() {
             <Button variant="ghost" size="sm" onClick={() => navigate("/projects")}>
               My Projects
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => navigate("/pricing")}>
-              Pricing
-            </Button>
-            <Button variant="hero" size="lg" onClick={() => navigate("/pricing")}>
-              Start Free Trial
+            <Button variant="hero" size="lg" onClick={() => navigate("/dashboard")}>
+              Start Analyzing
               <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
@@ -81,13 +78,9 @@ export default function LandingPage() {
             Upload your dataset, ask questions in plain English, and get beautiful
             visualizations instantly. No coding required.
           </p>
-          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-4 py-1.5 text-sm text-accent">
-            <Sparkles className="h-4 w-4" />
-            1 month free trial — no credit card required
-          </div>
           <div className="mt-8 flex justify-center gap-4">
-            <Button variant="hero" size="lg" onClick={() => navigate("/pricing")}>
-              Start Free Trial
+            <Button variant="hero" size="lg" onClick={() => navigate("/dashboard")}>
+              Start Analyzing
               <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
           </div>

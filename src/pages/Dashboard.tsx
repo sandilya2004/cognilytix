@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Brain, FileDown, FileText, FolderOpen, Save } from "lucide-react";
+import { Brain, FileDown, FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FileUpload from "@/components/dashboard/FileUpload";
 import PromptBar from "@/components/dashboard/PromptBar";
@@ -8,7 +8,6 @@ import ChartCard from "@/components/dashboard/ChartCard";
 import VisualPicker from "@/components/dashboard/VisualPicker";
 import SummaryPanel from "@/components/dashboard/SummaryPanel";
 import InsightsPanel from "@/components/dashboard/InsightsPanel";
-import SuggestionsPanel from "@/components/dashboard/SuggestionsPanel";
 import DataPanel from "@/components/dashboard/DataPanel";
 import DataHealthCheck from "@/components/dashboard/DataHealthCheck";
 import SheetSelectorDialog from "@/components/dashboard/SheetSelectorDialog";
@@ -19,21 +18,32 @@ import { interpretPrompt, createFromType } from "@/lib/local-ai";
 import { generateSummary } from "@/lib/summarize";
 import { toast } from "sonner";
 import { getProjects, saveProjects, type Project } from "@/pages/Projects";
+import { supabase } from "@/integrations/supabase/client";
+
+type Tab = "upload" | "preview" | "health" | "insights" | "dashboard";
+
+const tabs: { id: Tab; label: string; icon: React.ElementType; needsData: boolean }[] = [
+  { id: "upload", label: "Upload", icon: Upload, needsData: false },
+  { id: "preview", label: "Preview", icon: Eye, needsData: true },
+  { id: "health", label: "Health Check", icon: HeartPulse, needsData: true },
+  { id: "insights", label: "Insights", icon: Lightbulb, needsData: true },
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, needsData: true },
+];
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<Tab>("upload");
   const [data, setData] = useState<ParsedData | null>(null);
   const [fileName, setFileName] = useState("");
   const [charts, setCharts] = useState<ChartConfig[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [summaryText, setSummaryText] = useState("");
+  const [aiResponse, setAiResponse] = useState("");
   const [slicerFilters, setSlicerFilters] = useState<Record<string, Set<string>>>({});
-  const [showSheetSelector, setShowSheetSelector] = useState(false);
   const [sheetSelectorOpen, setSheetSelectorOpen] = useState(false);
   const [excelSheets, setExcelSheets] = useState<SheetInfo[]>([]);
   const [excelFile, setExcelFile] = useState<File | null>(null);
-  const uploadRef = useRef<HTMLDivElement>(null);
 
   // Restore saved project on mount
   useState(() => {
@@ -46,7 +56,7 @@ export default function Dashboard() {
       if (parsed.charts) setCharts(parsed.charts);
       if (parsed.summaryText) setSummaryText(parsed.summaryText);
       if (parsed.fileName) setFileName(parsed.fileName);
-      if (parsed.data) setData(parsed.data);
+      if (parsed.data) { setData(parsed.data); setActiveTab("dashboard"); }
     } catch { /* ignore */ }
   });
 
@@ -55,38 +65,57 @@ export default function Dashboard() {
     setFileName(name);
     setCharts([]);
     setSummaryText("");
+    setAiResponse("");
     setSlicerFilters({});
-    setShowSheetSelector(name.includes(" — ") || /\.xlsx?$/i.test(name));
+    setActiveTab("preview");
   }, []);
 
   const handleDataChange = useCallback((newData: ParsedData) => {
     setData(newData);
   }, []);
 
+  const getDataContext = useCallback(() => {
+    if (!data) return "";
+    const colInfo = data.columns.map(c => `${c.name} (${c.type})`).join(", ");
+    const sampleRows = data.rows.slice(0, 5).map(r => JSON.stringify(r)).join("\n");
+    return `Columns: ${colInfo}\nTotal Rows: ${data.rows.length}\nSample Data:\n${sampleRows}`;
+  }, [data]);
+
   const handlePrompt = useCallback(
     async (prompt: string) => {
       if (!data) return;
       setIsProcessing(true);
       try {
-        await new Promise((r) => setTimeout(r, 400));
+        // Try to generate a chart from the prompt
         const p = prompt.toLowerCase();
-        if (p.includes("summar") || p.includes("insight") || p.includes("analysis") || p.includes("recommend") || (p.includes("trend") && p.includes("detail"))) {
+        if (p.includes("summar") || p.includes("insight") || p.includes("analysis") || p.includes("recommend")) {
           const summary = generateSummary(charts, data);
           setSummaryText(summary);
           toast.success("Summary generated!");
-          setIsProcessing(false);
-          return;
+        } else {
+          const config = interpretPrompt(prompt, data.columns, data.rows);
+          setCharts((prev) => [config, ...prev]);
+          toast.success(`Generated: ${config.title}`);
         }
-        const config = interpretPrompt(prompt, data.columns, data.rows);
-        setCharts((prev) => [config, ...prev]);
-        toast.success(`Generated: ${config.title}`);
+
+        // Also get AI response from Gemini
+        try {
+          const { data: aiData, error } = await supabase.functions.invoke("ai-chat", {
+            body: { prompt, context: getDataContext() },
+          });
+          if (!error && aiData?.response) {
+            setAiResponse(aiData.response);
+          }
+        } catch {
+          // AI response is optional, don't block
+        }
       } catch {
         toast.error("Failed to interpret prompt. Try rephrasing.");
       } finally {
         setIsProcessing(false);
       }
     },
-    [data, charts]
+    [data, charts, getDataContext]
   );
 
   const handleVisualPick = useCallback(
@@ -211,17 +240,12 @@ export default function Dashboard() {
     toast.success("Project saved!");
   };
 
-  const scrollToUpload = () => uploadRef.current?.scrollIntoView({ behavior: "smooth" });
-
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="flex h-14 items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
             <Brain className="h-5 w-5 text-primary" />
             <span className="font-semibold text-foreground">Cognilytix AI</span>
           </div>
@@ -230,120 +254,168 @@ export default function Dashboard() {
               <FolderOpen className="h-4 w-4 mr-1" /> Projects
             </Button>
             {charts.length > 0 && (
-              <>
-                <Button variant="ghost" size="sm" onClick={handleGenerateSummary}>
-                  <FileText className="h-4 w-4 mr-1" /> Summary
-                </Button>
-                <Button variant="outline" size="sm" onClick={exportDashboardPDF}>
-                  <FileDown className="h-4 w-4 mr-1" /> Export PDF
-                </Button>
-              </>
+              <Button variant="outline" size="sm" onClick={exportDashboardPDF}>
+                <FileDown className="h-4 w-4 mr-1" /> Export PDF
+              </Button>
             )}
           </div>
         </div>
       </header>
 
-      {/* Prompt bar */}
-      <div className="border-b border-border bg-card/50 px-4 py-3">
-        <div className="max-w-4xl mx-auto">
-          <PromptBar onSubmit={handlePrompt} isLoading={isProcessing} disabled={!data} />
+      {/* Tab Navigation */}
+      <nav className="border-b border-border bg-card/50 px-4">
+        <div className="flex gap-1 overflow-x-auto">
+          {tabs.map(tab => {
+            const disabled = tab.needsData && !data;
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                disabled={disabled}
+                onClick={() => !disabled && setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? "border-primary text-primary"
+                    : disabled
+                    ? "border-transparent text-muted-foreground/40 cursor-not-allowed"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
-      </div>
+      </nav>
 
-      {/* 3-column layout */}
-      <div className="flex h-[calc(100vh-7.5rem)]">
-        {/* LEFT: Data panel */}
-        <aside className="w-64 border-r border-border bg-card/30 p-3 overflow-y-auto shrink-0 hidden lg:block">
-          <DataPanel
-            data={data}
-            fileName={fileName}
-            onUploadClick={scrollToUpload}
-            showSheetSelector={showSheetSelector}
-            onSheetSelectorClick={() => setSheetSelectorOpen(true)}
-          />
-        </aside>
+      {/* Tab Content */}
+      <main className="flex-1 overflow-y-auto">
+        {/* UPLOAD TAB */}
+        {activeTab === "upload" && (
+          <div className="max-w-3xl mx-auto p-6">
+            <FileUpload
+              onDataLoaded={handleDataLoaded}
+              onSheetsDetected={(sheets, file, name) => {
+                setExcelSheets(sheets);
+                setExcelFile(file);
+                setFileName(name);
+                setSheetSelectorOpen(true);
+              }}
+            />
+          </div>
+        )}
 
-        {/* CENTER: Main content */}
-        <main className="flex-1 overflow-y-auto p-4 space-y-4">
-          {!data ? (
-             <div ref={uploadRef}>
-              <FileUpload
-                onDataLoaded={handleDataLoaded}
-                onSheetsDetected={(sheets, file, name) => {
-                  setExcelSheets(sheets);
-                  setExcelFile(file);
-                  setFileName(name);
-                  setShowSheetSelector(true);
-                  setSheetSelectorOpen(true);
-                }}
-              />
+        {/* PREVIEW TAB */}
+        {activeTab === "preview" && data && (
+          <div className="max-w-5xl mx-auto p-6 space-y-4">
+            <DataPanel
+              data={data}
+              fileName={fileName}
+              onUploadClick={() => setActiveTab("upload")}
+              showSheetSelector={excelSheets.length > 0}
+              onSheetSelectorClick={() => setSheetSelectorOpen(true)}
+            />
+          </div>
+        )}
+
+        {/* HEALTH CHECK TAB */}
+        {activeTab === "health" && data && (
+          <div className="max-w-4xl mx-auto p-6">
+            <DataHealthCheck data={data} onDataFixed={handleDataChange} />
+          </div>
+        )}
+
+        {/* INSIGHTS TAB */}
+        {activeTab === "insights" && data && (
+          <div className="max-w-4xl mx-auto p-6 space-y-4">
+            <InsightsPanel data={data} />
+            {aiResponse && (
+              <div className="rounded-lg border border-border bg-card p-5">
+                <h3 className="font-semibold text-foreground text-sm mb-3 flex items-center gap-2">
+                  <Lightbulb className="h-4 w-4 text-primary" />
+                  AI Analysis
+                </h3>
+                <div className="text-sm text-muted-foreground leading-relaxed prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{
+                    __html: aiResponse
+                      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+                      .replace(/\n/g, "<br/>"),
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* DASHBOARD TAB */}
+        {activeTab === "dashboard" && data && (
+          <div className="p-4 space-y-4">
+            {/* Prompt bar */}
+            <div className="max-w-4xl mx-auto">
+              <PromptBar onSubmit={handlePrompt} isLoading={isProcessing} disabled={!data} />
             </div>
-          ) : (
-            <>
-              {/* Data Health Check */}
-              <DataHealthCheck data={data} onDataFixed={handleDataChange} />
 
-              {/* Insights auto-generated */}
-              <InsightsPanel data={data} />
+            {/* Visual Picker */}
+            <VisualPicker onSelect={handleVisualPick} />
 
-              {/* Visual Picker */}
-              <VisualPicker onSelect={handleVisualPick} />
+            {/* Summary */}
+            {summaryText && (
+              <div id="summary-panel">
+                <SummaryPanel summaryText={summaryText} />
+              </div>
+            )}
 
+            {/* Charts grid */}
+            {charts.length > 0 && (
+              <div id="chart-grid" className="grid gap-4 md:grid-cols-2">
+                {charts.map(chart => (
+                  <ChartCard
+                    key={chart.id}
+                    config={chart}
+                    onRemove={removeChart}
+                    filteredData={getFilteredData()}
+                    slicerFilters={slicerFilters}
+                    onSlicerToggle={handleSlicerToggle}
+                  />
+                ))}
+              </div>
+            )}
 
-              {/* Summary */}
-              {summaryText && (
-                <div id="summary-panel">
-                  <SummaryPanel summaryText={summaryText} />
-                </div>
-              )}
+            {/* Loading */}
+            {isProcessing && (
+              <div className="flex flex-col items-center gap-3 py-8">
+                <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                <p className="text-sm text-muted-foreground">Analyzing your data...</p>
+              </div>
+            )}
 
-              {/* Charts grid */}
-              {charts.length > 0 && (
-                <div id="chart-grid" className="grid gap-4 md:grid-cols-2">
-                  {charts.map(chart => (
-                    <ChartCard
-                      key={chart.id}
-                      config={chart}
-                      onRemove={removeChart}
-                      filteredData={getFilteredData()}
-                      slicerFilters={slicerFilters}
-                      onSlicerToggle={handleSlicerToggle}
-                    />
-                  ))}
-                </div>
-              )}
+            {/* Empty state */}
+            {charts.length === 0 && !isProcessing && (
+              <div className="text-center py-12 rounded-lg border border-dashed border-border">
+                <p className="text-muted-foreground text-sm">Your visualizations will appear here.</p>
+                <p className="text-muted-foreground text-xs mt-1">Try a prompt or click a visual type above.</p>
+              </div>
+            )}
 
-              {/* Loading */}
-              {isProcessing && (
-                <div className="flex flex-col items-center gap-3 py-8">
-                  <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-                  <p className="text-sm text-muted-foreground">Analyzing your data...</p>
-                </div>
-              )}
-
-              {/* Empty state */}
-              {charts.length === 0 && !isProcessing && (
-                <div className="text-center py-12 rounded-lg border border-dashed border-border">
-                  <p className="text-muted-foreground text-sm">Your visualizations will appear here.</p>
-                  <p className="text-muted-foreground text-xs mt-1">Try a prompt or click a visual type above.</p>
-                </div>
-              )}
-
-              {/* Save */}
-              <div className="flex justify-center pt-2 pb-6">
-                <Button variant="hero" size="lg" onClick={handleSaveProject}>
-                  <Save className="h-5 w-5 mr-2" /> Save Project
+            {/* Summary button */}
+            {charts.length > 0 && (
+              <div className="flex justify-center gap-3 pt-2">
+                <Button variant="outline" size="sm" onClick={handleGenerateSummary}>
+                  <Lightbulb className="h-4 w-4 mr-1" /> Generate Summary
                 </Button>
               </div>
-            </>
-          )}
-        </main>
+            )}
 
-        {/* RIGHT: Suggestions */}
-        <aside className="w-56 border-l border-border bg-card/30 p-3 overflow-y-auto shrink-0 hidden xl:block">
-          <SuggestionsPanel data={data} onPrompt={handlePrompt} />
-        </aside>
-      </div>
+            {/* Save */}
+            <div className="flex justify-center pt-2 pb-6">
+              <Button variant="hero" size="lg" onClick={handleSaveProject}>
+                <Save className="h-5 w-5 mr-2" /> Save Project
+              </Button>
+            </div>
+          </div>
+        )}
+      </main>
 
       {/* Sheet Selector Dialog */}
       <SheetSelectorDialog
@@ -358,6 +430,7 @@ export default function Dashboard() {
           setCharts([]);
           setSummaryText("");
           setSlicerFilters({});
+          setActiveTab("preview");
         }}
       />
     </div>
