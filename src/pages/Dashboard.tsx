@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Brain, FileDown, FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard } from "lucide-react";
+import { Brain, FileDown, FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard, BookOpen, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FileUpload from "@/components/dashboard/FileUpload";
 import PromptBar from "@/components/dashboard/PromptBar";
@@ -11,6 +11,9 @@ import InsightsPanel from "@/components/dashboard/InsightsPanel";
 import DataPanel from "@/components/dashboard/DataPanel";
 import DataHealthCheck from "@/components/dashboard/DataHealthCheck";
 import SheetSelectorDialog from "@/components/dashboard/SheetSelectorDialog";
+import AxisBuilder from "@/components/dashboard/AxisBuilder";
+import StoryDashboard from "@/components/dashboard/StoryDashboard";
+import PredictionPanel from "@/components/dashboard/PredictionPanel";
 import type { ParsedData } from "@/lib/data-processing";
 import type { SheetInfo } from "@/lib/data-processing";
 import type { ChartConfig, ChartType } from "@/lib/chart-types";
@@ -20,7 +23,7 @@ import { toast } from "sonner";
 import { getProjects, saveProjects, type Project } from "@/pages/Projects";
 import { supabase } from "@/integrations/supabase/client";
 
-type Tab = "upload" | "preview" | "health" | "insights" | "dashboard";
+type Tab = "upload" | "preview" | "health" | "insights" | "dashboard" | "story" | "prediction";
 
 const tabs: { id: Tab; label: string; icon: React.ElementType; needsData: boolean }[] = [
   { id: "upload", label: "Upload", icon: Upload, needsData: false },
@@ -28,6 +31,8 @@ const tabs: { id: Tab; label: string; icon: React.ElementType; needsData: boolea
   { id: "health", label: "Health Check", icon: HeartPulse, needsData: true },
   { id: "insights", label: "Insights", icon: Lightbulb, needsData: true },
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, needsData: true },
+  { id: "story", label: "Story", icon: BookOpen, needsData: true },
+  { id: "prediction", label: "Prediction", icon: TrendingUp, needsData: true },
 ];
 
 export default function Dashboard() {
@@ -135,6 +140,64 @@ export default function Dashboard() {
   const removeChart = useCallback((id: string) => {
     setCharts((prev) => prev.filter((c) => c.id !== id));
   }, []);
+
+  const handleAxisCreate = useCallback(
+    (xKey: string, yKeys: string[], chartType: ChartType) => {
+      if (!data) return;
+      try {
+        const agg = (rows: Record<string, unknown>[], gk: string, vk: string) => {
+          const map = new Map<string, number>();
+          for (const row of rows) {
+            const key = String(row[gk] ?? "Unknown");
+            map.set(key, (map.get(key) || 0) + (Number(row[vk]) || 0));
+          }
+          return Array.from(map.entries()).map(([k, v]) => ({ [gk]: k, [vk]: Math.round(v * 100) / 100 }));
+        };
+
+        const stringCols = data.columns.filter(c => c.type === "string" || c.type === "date").map(c => c.name);
+        const isCategory = stringCols.includes(xKey);
+        let chartData: Record<string, unknown>[];
+
+        if (isCategory && yKeys.length === 1) {
+          chartData = agg(data.rows, xKey, yKeys[0]);
+        } else if (isCategory && yKeys.length > 1) {
+          // Multi-key aggregation
+          const map = new Map<string, Record<string, number>>();
+          for (const row of data.rows) {
+            const key = String(row[xKey] ?? "Unknown");
+            if (!map.has(key)) map.set(key, {});
+            const entry = map.get(key)!;
+            for (const yk of yKeys) {
+              entry[yk] = (entry[yk] || 0) + (Number(row[yk]) || 0);
+            }
+          }
+          chartData = Array.from(map.entries()).map(([k, v]) => ({ [xKey]: k, ...v }));
+        } else {
+          chartData = data.rows.slice(0, 100);
+        }
+
+        if (chartType === "pie") chartData = chartData.slice(0, 10);
+
+        const id = Math.random().toString(36).slice(2, 10);
+        const config: ChartConfig = {
+          id,
+          type: chartType,
+          title: `${yKeys.join(", ")} by ${xKey}`,
+          xKey,
+          yKey: yKeys[0],
+          yKeys: yKeys.length > 1 ? yKeys : undefined,
+          labelKey: xKey,
+          valueKey: yKeys[0],
+          data: chartData,
+        };
+        setCharts(prev => [config, ...prev]);
+        toast.success(`Created: ${config.title}`);
+      } catch {
+        toast.error("Could not create chart with selected columns.");
+      }
+    },
+    [data]
+  );
 
   const handleGenerateSummary = () => {
     if (!data) return;
@@ -359,6 +422,9 @@ export default function Dashboard() {
             {/* Visual Picker */}
             <VisualPicker onSelect={handleVisualPick} />
 
+            {/* Axis Builder */}
+            <AxisBuilder columns={data.columns} onCreateChart={handleAxisCreate} />
+
             {/* Summary */}
             {summaryText && (
               <div id="summary-panel">
@@ -414,6 +480,15 @@ export default function Dashboard() {
               </Button>
             </div>
           </div>
+        )}
+        {/* STORY TAB */}
+        {activeTab === "story" && data && (
+          <StoryDashboard data={data} charts={charts} summaryText={summaryText} />
+        )}
+
+        {/* PREDICTION TAB */}
+        {activeTab === "prediction" && data && (
+          <PredictionPanel data={data} />
         )}
       </main>
 
