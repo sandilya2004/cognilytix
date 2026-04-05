@@ -486,6 +486,15 @@ export default function Dashboard() {
             </div>
           </div>
         )}
+        {/* STORY TAB */}
+        {activeTab === "story" && data && (
+          <StoryDashboard data={data} charts={charts} summaryText={summaryText} />
+        )}
+
+        {/* PREDICTION TAB */}
+        {activeTab === "prediction" && data && (
+          <PredictionPanel data={data} />
+        )}
       </main>
 
       {/* Sheet Selector Dialog */}
