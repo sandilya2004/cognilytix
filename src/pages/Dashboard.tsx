@@ -159,7 +159,7 @@ export default function Dashboard() {
         let chartData: Record<string, unknown>[];
 
         if (isCategory && yKeys.length === 1) {
-          chartData = localAgg(data.rows, xKey, yKeys[0]);
+          chartData = agg(data.rows, xKey, yKeys[0]);
         } else if (isCategory && yKeys.length > 1) {
           // Multi-key aggregation
           const map = new Map<string, Record<string, number>>();
