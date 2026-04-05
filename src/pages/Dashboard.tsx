@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Brain, FileDown, FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard } from "lucide-react";
+import { Brain, FileDown, FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard, BookOpen, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FileUpload from "@/components/dashboard/FileUpload";
 import PromptBar from "@/components/dashboard/PromptBar";
@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { getProjects, saveProjects, type Project } from "@/pages/Projects";
 import { supabase } from "@/integrations/supabase/client";
 
-type Tab = "upload" | "preview" | "health" | "insights" | "dashboard";
+type Tab = "upload" | "preview" | "health" | "insights" | "dashboard" | "story" | "prediction";
 
 const tabs: { id: Tab; label: string; icon: React.ElementType; needsData: boolean }[] = [
   { id: "upload", label: "Upload", icon: Upload, needsData: false },
@@ -28,6 +28,8 @@ const tabs: { id: Tab; label: string; icon: React.ElementType; needsData: boolea
   { id: "health", label: "Health Check", icon: HeartPulse, needsData: true },
   { id: "insights", label: "Insights", icon: Lightbulb, needsData: true },
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, needsData: true },
+  { id: "story", label: "Story", icon: BookOpen, needsData: true },
+  { id: "prediction", label: "Prediction", icon: TrendingUp, needsData: true },
 ];
 
 export default function Dashboard() {
