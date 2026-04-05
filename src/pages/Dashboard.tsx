@@ -92,37 +92,53 @@ export default function Dashboard() {
     async (prompt: string) => {
       if (!data) return;
       setIsProcessing(true);
+
+      // Add user message to chat
+      const userMsg: ChatMessage = { role: "user", content: prompt };
+      setChatMessages(prev => [...prev, userMsg]);
+
       try {
-        // Try to generate a chart from the prompt
-        const p = prompt.toLowerCase();
-        if (p.includes("summar") || p.includes("insight") || p.includes("analysis") || p.includes("recommend")) {
-          const summary = generateSummary(charts, data);
-          setSummaryText(summary);
-          toast.success("Summary generated!");
-        } else {
-          const config = interpretPrompt(prompt, data.columns, data.rows);
-          setCharts((prev) => [config, ...prev]);
-          toast.success(`Generated: ${config.title}`);
+        // Build conversation history for AI
+        const allMessages = [...chatMessages, userMsg].map(m => ({
+          role: m.role,
+          content: m.content,
+        }));
+
+        const { data: aiData, error } = await supabase.functions.invoke("ai-chat", {
+          body: { messages: allMessages, context: getDataContext() },
+        });
+
+        if (error) throw error;
+
+        const responseText = aiData?.response || "Sorry, I couldn't process that. Please try again.";
+
+        // Add assistant message to chat
+        setChatMessages(prev => [...prev, { role: "assistant", content: responseText }]);
+
+        // Check if AI wants to create a visual
+        const visualMatch = responseText.match(/\[CREATE_VISUAL\]\s*(.+)/s);
+        if (visualMatch) {
+          const visualDesc = visualMatch[1].trim();
+          try {
+            const config = interpretPrompt(visualDesc, data.columns, data.rows);
+            setCharts(prev => [config, ...prev]);
+            toast.success(`Created: ${config.title}`);
+          } catch {
+            // Visual creation failed silently, AI response still shown
+          }
         }
 
-        // Also get AI response from Gemini
-        try {
-          const { data: aiData, error } = await supabase.functions.invoke("ai-chat", {
-            body: { prompt, context: getDataContext() },
-          });
-          if (!error && aiData?.response) {
-            setAiResponse(aiData.response);
-          }
-        } catch {
-          // AI response is optional, don't block
-        }
-      } catch {
-        toast.error("Failed to interpret prompt. Try rephrasing.");
+        // Update AI response for insights tab
+        setAiResponse(responseText.replace(/\[CREATE_VISUAL\].*$/s, "").trim());
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : "Failed to get AI response";
+        setChatMessages(prev => [...prev, { role: "assistant", content: `Sorry, something went wrong: ${errorMsg}` }]);
+        toast.error("AI response failed. Please try again.");
       } finally {
         setIsProcessing(false);
       }
     },
-    [data, charts, getDataContext]
+    [data, chatMessages, getDataContext]
   );
 
   const handleVisualPick = useCallback(
