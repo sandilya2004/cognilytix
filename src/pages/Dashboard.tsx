@@ -73,6 +73,7 @@ export default function Dashboard() {
     setCharts([]);
     setSummaryText("");
     setAiResponse("");
+    setChatMessages([]);
     setSlicerFilters({});
     setActiveTab("preview");
   }, []);
