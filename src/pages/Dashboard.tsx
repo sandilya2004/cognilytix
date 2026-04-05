@@ -145,19 +145,14 @@ export default function Dashboard() {
     (xKey: string, yKeys: string[], chartType: ChartType) => {
       if (!data) return;
       try {
-        const { generateId } = require("@/lib/chart-types");
-        const { aggregateData: localAgg } = (() => {
-          // inline aggregate
-          const agg = (rows: Record<string, unknown>[], gk: string, vk: string) => {
-            const map = new Map<string, number>();
-            for (const row of rows) {
-              const key = String(row[gk] ?? "Unknown");
-              map.set(key, (map.get(key) || 0) + (Number(row[vk]) || 0));
-            }
-            return Array.from(map.entries()).map(([k, v]) => ({ [gk]: k, [vk]: Math.round(v * 100) / 100 }));
-          };
-          return { aggregateData: agg };
-        })();
+        const agg = (rows: Record<string, unknown>[], gk: string, vk: string) => {
+          const map = new Map<string, number>();
+          for (const row of rows) {
+            const key = String(row[gk] ?? "Unknown");
+            map.set(key, (map.get(key) || 0) + (Number(row[vk]) || 0));
+          }
+          return Array.from(map.entries()).map(([k, v]) => ({ [gk]: k, [vk]: Math.round(v * 100) / 100 }));
+        };
 
         const stringCols = data.columns.filter(c => c.type === "string" || c.type === "date").map(c => c.name);
         const isCategory = stringCols.includes(xKey);
