@@ -9,10 +9,10 @@ interface PromptBarProps {
 }
 
 const suggestions = [
+  "What are the key trends in my data?",
+  "Which category has the highest sales?",
+  "Are there any anomalies in the data?",
   "Create a bar chart of sales by region",
-  "Show monthly revenue trend",
-  "Top 10 products by profit",
-  "Distribution of customer ages",
 ];
 
 export default function PromptBar({ onSubmit, isLoading, disabled }: PromptBarProps) {
