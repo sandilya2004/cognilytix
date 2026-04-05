@@ -435,7 +435,7 @@ export default function Dashboard() {
             {/* Prompt bar */}
             <div className="max-w-4xl mx-auto">
               <PromptBar onSubmit={handlePrompt} isLoading={isProcessing} disabled={!data} />
-            </div>
+              <ChatPanel messages={chatMessages} isLoading={isProcessing} />
 
             {/* Visual Picker */}
             <VisualPicker onSelect={handleVisualPick} />
