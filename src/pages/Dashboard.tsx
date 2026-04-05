@@ -141,6 +141,69 @@ export default function Dashboard() {
     setCharts((prev) => prev.filter((c) => c.id !== id));
   }, []);
 
+  const handleAxisCreate = useCallback(
+    (xKey: string, yKeys: string[], chartType: ChartType) => {
+      if (!data) return;
+      try {
+        const { generateId } = require("@/lib/chart-types");
+        const { aggregateData: localAgg } = (() => {
+          // inline aggregate
+          const agg = (rows: Record<string, unknown>[], gk: string, vk: string) => {
+            const map = new Map<string, number>();
+            for (const row of rows) {
+              const key = String(row[gk] ?? "Unknown");
+              map.set(key, (map.get(key) || 0) + (Number(row[vk]) || 0));
+            }
+            return Array.from(map.entries()).map(([k, v]) => ({ [gk]: k, [vk]: Math.round(v * 100) / 100 }));
+          };
+          return { aggregateData: agg };
+        })();
+
+        const stringCols = data.columns.filter(c => c.type === "string" || c.type === "date").map(c => c.name);
+        const isCategory = stringCols.includes(xKey);
+        let chartData: Record<string, unknown>[];
+
+        if (isCategory && yKeys.length === 1) {
+          chartData = localAgg(data.rows, xKey, yKeys[0]);
+        } else if (isCategory && yKeys.length > 1) {
+          // Multi-key aggregation
+          const map = new Map<string, Record<string, number>>();
+          for (const row of data.rows) {
+            const key = String(row[xKey] ?? "Unknown");
+            if (!map.has(key)) map.set(key, {});
+            const entry = map.get(key)!;
+            for (const yk of yKeys) {
+              entry[yk] = (entry[yk] || 0) + (Number(row[yk]) || 0);
+            }
+          }
+          chartData = Array.from(map.entries()).map(([k, v]) => ({ [xKey]: k, ...v }));
+        } else {
+          chartData = data.rows.slice(0, 100);
+        }
+
+        if (chartType === "pie") chartData = chartData.slice(0, 10);
+
+        const id = Math.random().toString(36).slice(2, 10);
+        const config: ChartConfig = {
+          id,
+          type: chartType,
+          title: `${yKeys.join(", ")} by ${xKey}`,
+          xKey,
+          yKey: yKeys[0],
+          yKeys: yKeys.length > 1 ? yKeys : undefined,
+          labelKey: xKey,
+          valueKey: yKeys[0],
+          data: chartData,
+        };
+        setCharts(prev => [config, ...prev]);
+        toast.success(`Created: ${config.title}`);
+      } catch {
+        toast.error("Could not create chart with selected columns.");
+      }
+    },
+    [data]
+  );
+
   const handleGenerateSummary = () => {
     if (!data) return;
     const summary = generateSummary(charts, data);
