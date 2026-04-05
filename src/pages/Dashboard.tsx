@@ -46,6 +46,7 @@ export default function Dashboard() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [summaryText, setSummaryText] = useState("");
   const [aiResponse, setAiResponse] = useState("");
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [slicerFilters, setSlicerFilters] = useState<Record<string, Set<string>>>({});
   const [sheetSelectorOpen, setSheetSelectorOpen] = useState(false);
   const [excelSheets, setExcelSheets] = useState<SheetInfo[]>([]);
