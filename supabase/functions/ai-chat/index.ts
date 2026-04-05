@@ -2,59 +2,66 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { prompt, context } = await req.json();
-    const apiKey = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    if (!apiKey) throw new Error("GOOGLE_GEMINI_API_KEY is not configured");
+    const { messages, context } = await req.json();
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const systemPrompt = `You are Cognilytix AI, an expert data analyst assistant. You help users understand their data, create visualizations, and provide business insights.
 
-When given data context, analyze it and provide:
-- Clear, actionable insights
-- Business recommendations
-- Trend analysis
-- Anomaly detection
+IMPORTANT BEHAVIOR:
+- When a user asks a question about their data, ANSWER the question conversationally first.
+- Do NOT create charts or visuals automatically. Only suggest creating a visual if relevant.
+- If the user explicitly asks to "create", "make", "show", "generate", or "build" a chart/visual/graph, respond with the answer AND include the special tag [CREATE_VISUAL] at the very end of your response followed by a brief description of what chart to create, like: [CREATE_VISUAL] bar chart of sales by region
+- If the user is just asking questions, discussing data, or seeking insights, just answer naturally without creating visuals.
+- Be concise, professional, and use markdown formatting.
+- Use bullet points where appropriate.
 
-Be concise, professional, and use bullet points where appropriate. Format responses in markdown.`;
+Data Context:
+${context || "No data loaded yet."}`;
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            { role: "user", parts: [{ text: `${systemPrompt}\n\nData Context:\n${context || "No data loaded yet."}\n\nUser Query: ${prompt}` }] },
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 2048,
-          },
-        }),
-      }
-    );
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...messages,
+        ],
+        stream: false,
+      }),
+    });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Gemini API error:", response.status, errorText);
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "Credits exhausted. Please add funds." }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const errorText = await response.text();
+      console.error("AI gateway error:", response.status, errorText);
       return new Response(JSON.stringify({ error: "AI service error" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "I couldn't generate a response. Please try again.";
+    const text = data.choices?.[0]?.message?.content || "I couldn't generate a response. Please try again.";
 
     return new Response(JSON.stringify({ response: text }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
