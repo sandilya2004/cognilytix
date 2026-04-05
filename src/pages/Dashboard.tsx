@@ -4,6 +4,7 @@ import { Brain, FileDown, FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, 
 import { Button } from "@/components/ui/button";
 import FileUpload from "@/components/dashboard/FileUpload";
 import PromptBar from "@/components/dashboard/PromptBar";
+import ChatPanel, { type ChatMessage } from "@/components/dashboard/ChatPanel";
 import ChartCard from "@/components/dashboard/ChartCard";
 import VisualPicker from "@/components/dashboard/VisualPicker";
 import SummaryPanel from "@/components/dashboard/SummaryPanel";
