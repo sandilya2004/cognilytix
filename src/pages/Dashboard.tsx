@@ -427,6 +427,9 @@ export default function Dashboard() {
             {/* Visual Picker */}
             <VisualPicker onSelect={handleVisualPick} />
 
+            {/* Axis Builder */}
+            <AxisBuilder columns={data.columns} onCreateChart={handleAxisCreate} />
+
             {/* Summary */}
             {summaryText && (
               <div id="summary-panel">
