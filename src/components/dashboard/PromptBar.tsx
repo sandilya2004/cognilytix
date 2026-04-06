@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Sparkles, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -27,6 +27,18 @@ export default function PromptBar({ onSubmit, isLoading, disabled }: PromptBarPr
     setValue("");
   };
 
+  // Keyboard shortcuts: Cmd/Ctrl+Enter to submit, Escape to clear
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && document.activeElement === inputRef.current) {
+        setValue("");
+        inputRef.current?.blur();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
   return (
     <div className="space-y-3">
       <div
@@ -45,7 +57,11 @@ export default function PromptBar({ onSubmit, isLoading, disabled }: PromptBarPr
           onChange={(e) => setValue(e.target.value)}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey || !e.shiftKey)) {
+              handleSubmit();
+            }
+          }}
         />
         <Button
           size="sm"

@@ -1,5 +1,6 @@
 import { useRef, useEffect } from "react";
 import { Bot, User } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 
 export interface ChatMessage {
   role: "user" | "assistant";
@@ -38,17 +39,11 @@ export default function ChatPanel({ messages, isLoading }: ChatPanelProps) {
               }`}
             >
               {msg.role === "assistant" ? (
-                <div
-                  className="prose prose-sm max-w-none leading-relaxed [&_strong]:font-semibold [&_ul]:mt-1 [&_ul]:mb-1 [&_li]:my-0.5"
-                  dangerouslySetInnerHTML={{
-                    __html: msg.content
-                      .replace(/\[CREATE_VISUAL\].*$/s, "")
-                      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-                      .replace(/\n- /g, "\n<li>")
-                      .replace(/\n\* /g, "\n<li>")
-                      .replace(/\n/g, "<br/>"),
-                  }}
-                />
+                <div className="prose prose-sm max-w-none leading-relaxed [&_strong]:font-semibold [&_ul]:mt-1 [&_ul]:mb-1 [&_li]:my-0.5">
+                  <ReactMarkdown>
+                    {msg.content.replace(/\[CREATE_VISUAL\].*$/s, "")}
+                  </ReactMarkdown>
+                </div>
               ) : (
                 msg.content
               )}
