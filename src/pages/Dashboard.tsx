@@ -1,6 +1,6 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Brain, FileDown, FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard, BookOpen, TrendingUp } from "lucide-react";
+import { Brain, FileDown, FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard, BookOpen, TrendingUp, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FileUpload from "@/components/dashboard/FileUpload";
 import PromptBar from "@/components/dashboard/PromptBar";
@@ -23,6 +23,20 @@ import { generateSummary } from "@/lib/summarize";
 import { toast } from "sonner";
 import { getProjects, saveProjects, type Project } from "@/pages/Projects";
 import { supabase } from "@/integrations/supabase/client";
+import ReactMarkdown from "react-markdown";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  rectSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
 
 type Tab = "upload" | "preview" | "health" | "insights" | "dashboard" | "story" | "prediction";
 
@@ -34,6 +48,12 @@ const tabs: { id: Tab; label: string; icon: React.ElementType; needsData: boolea
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, needsData: true },
   { id: "story", label: "Story", icon: BookOpen, needsData: true },
   { id: "prediction", label: "Prediction", icon: TrendingUp, needsData: true },
+];
+
+const emptyStateSuggestions = [
+  "Show me a bar chart of the top 10 values",
+  "Compare trends over time",
+  "Give me a summary of this data",
 ];
 
 export default function Dashboard() {
@@ -51,9 +71,22 @@ export default function Dashboard() {
   const [sheetSelectorOpen, setSheetSelectorOpen] = useState(false);
   const [excelSheets, setExcelSheets] = useState<SheetInfo[]>([]);
   const [excelFile, setExcelFile] = useState<File | null>(null);
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("cognilytix_dark") === "true";
+    }
+    return false;
+  });
+  const [pdfProgress, setPdfProgress] = useState<string | null>(null);
 
-  // Restore saved project on mount
-  useState(() => {
+  // Dark mode effect
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", darkMode);
+    localStorage.setItem("cognilytix_dark", String(darkMode));
+  }, [darkMode]);
+
+  // Restore saved project on mount (fix: was useState, now useEffect)
+  useEffect(() => {
     const projectId = searchParams.get("project");
     if (!projectId) return;
     try {
@@ -65,6 +98,19 @@ export default function Dashboard() {
       if (parsed.fileName) setFileName(parsed.fileName);
       if (parsed.data) { setData(parsed.data); setActiveTab("dashboard"); }
     } catch { /* ignore */ }
+  }, [searchParams]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Cmd/Ctrl+S to save
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault();
+        handleSaveProject();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   });
 
   const handleDataLoaded = useCallback((parsed: ParsedData, name: string) => {
@@ -94,12 +140,10 @@ export default function Dashboard() {
       if (!data) return;
       setIsProcessing(true);
 
-      // Add user message to chat
       const userMsg: ChatMessage = { role: "user", content: prompt };
       setChatMessages(prev => [...prev, userMsg]);
 
       try {
-        // Build conversation history for AI
         const allMessages = [...chatMessages, userMsg].map(m => ({
           role: m.role,
           content: m.content,
@@ -113,10 +157,8 @@ export default function Dashboard() {
 
         const responseText = aiData?.response || "Sorry, I couldn't process that. Please try again.";
 
-        // Add assistant message to chat
         setChatMessages(prev => [...prev, { role: "assistant", content: responseText }]);
 
-        // Check if AI wants to create a visual
         const visualMatch = responseText.match(/\[CREATE_VISUAL\]\s*(.+)/s);
         if (visualMatch) {
           const visualDesc = visualMatch[1].trim();
@@ -125,11 +167,10 @@ export default function Dashboard() {
             setCharts(prev => [config, ...prev]);
             toast.success(`Created: ${config.title}`);
           } catch {
-            // Visual creation failed silently, AI response still shown
+            // Visual creation failed silently
           }
         }
 
-        // Update AI response for insights tab
         setAiResponse(responseText.replace(/\[CREATE_VISUAL\].*$/s, "").trim());
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : "Failed to get AI response";
@@ -160,6 +201,10 @@ export default function Dashboard() {
     setCharts((prev) => prev.filter((c) => c.id !== id));
   }, []);
 
+  const handleTitleChange = useCallback((id: string, newTitle: string) => {
+    setCharts(prev => prev.map(c => c.id === id ? { ...c, title: newTitle } : c));
+  }, []);
+
   const handleAxisCreate = useCallback(
     (xKey: string, yKeys: string[], chartType: ChartType) => {
       if (!data) return;
@@ -180,7 +225,6 @@ export default function Dashboard() {
         if (isCategory && yKeys.length === 1) {
           chartData = agg(data.rows, xKey, yKeys[0]);
         } else if (isCategory && yKeys.length > 1) {
-          // Multi-key aggregation
           const map = new Map<string, Record<string, number>>();
           for (const row of data.rows) {
             const key = String(row[xKey] ?? "Unknown");
@@ -237,7 +281,8 @@ export default function Dashboard() {
     });
   }, []);
 
-  const getFilteredData = useCallback(() => {
+  // Memoize filtered data
+  const filteredData = useMemo(() => {
     if (!data || Object.keys(slicerFilters).length === 0) return null;
     return data.rows.filter(row =>
       Object.entries(slicerFilters).every(([key, values]) => values.has(String(row[key] ?? "")))
@@ -248,7 +293,7 @@ export default function Dashboard() {
     const chartEls = document.querySelectorAll("#chart-grid > div");
     const summaryEl = document.querySelector("#summary-panel");
     if (chartEls.length === 0 && !summaryEl) return;
-    toast.info("Generating high-quality PDF…");
+    setPdfProgress("Preparing export…");
     try {
       const { default: html2canvas } = await import("html2canvas");
       const { default: jsPDF } = await import("jspdf");
@@ -263,15 +308,21 @@ export default function Dashboard() {
       const cellH = (pageH - margin * 2 - gap * (rows - 1)) / rows;
       const perPage = cols * rows;
 
-      const images: string[] = [];
-      for (let i = 0; i < chartEls.length; i++) {
-        const el = chartEls[i] as HTMLElement;
-        const origPadding = el.style.padding;
-        el.style.padding = "12px";
-        const canvas = await html2canvas(el, { backgroundColor: "#ffffff", scale: 4, useCORS: true, logging: false, width: el.scrollWidth + 24, height: el.scrollHeight + 24 });
-        el.style.padding = origPadding;
-        images.push(canvas.toDataURL("image/png", 1.0));
-      }
+      // Parallel canvas rendering
+      const total = chartEls.length;
+      setPdfProgress(`Rendering ${total} charts…`);
+      const canvasPromises = Array.from(chartEls).map((el) => {
+        const htmlEl = el as HTMLElement;
+        const origPadding = htmlEl.style.padding;
+        htmlEl.style.padding = "12px";
+        const p = html2canvas(htmlEl, { backgroundColor: "#ffffff", scale: 4, useCORS: true, logging: false, width: htmlEl.scrollWidth + 24, height: htmlEl.scrollHeight + 24 })
+          .then(canvas => {
+            htmlEl.style.padding = origPadding;
+            return canvas.toDataURL("image/png", 1.0);
+          });
+        return p;
+      });
+      const images = await Promise.all(canvasPromises);
 
       for (let i = 0; i < images.length; i++) {
         const posInPage = i % perPage;
@@ -282,6 +333,7 @@ export default function Dashboard() {
       }
 
       if (summaryEl) {
+        setPdfProgress("Rendering summary…");
         pdf.addPage();
         const summaryCanvas = await html2canvas(summaryEl as HTMLElement, { backgroundColor: "#ffffff", scale: 4, useCORS: true, logging: false, width: (summaryEl as HTMLElement).scrollWidth + 20 });
         const imgData = summaryCanvas.toDataURL("image/png", 1.0);
@@ -298,6 +350,8 @@ export default function Dashboard() {
       toast.success("PDF exported!");
     } catch {
       toast.error("PDF export failed.");
+    } finally {
+      setPdfProgress(null);
     }
   };
 
@@ -322,6 +376,19 @@ export default function Dashboard() {
     toast.success("Project saved!");
   };
 
+  // DnD sensors
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setCharts(prev => {
+      const oldIdx = prev.findIndex(c => c.id === active.id);
+      const newIdx = prev.findIndex(c => c.id === over.id);
+      return arrayMove(prev, oldIdx, newIdx);
+    });
+  }, []);
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
@@ -332,12 +399,15 @@ export default function Dashboard() {
             <span className="font-semibold text-foreground">Cognilytix AI</span>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDarkMode(!darkMode)} title="Toggle dark mode">
+              {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => navigate("/projects")}>
               <FolderOpen className="h-4 w-4 mr-1" /> Projects
             </Button>
             {charts.length > 0 && (
-              <Button variant="outline" size="sm" onClick={exportDashboardPDF}>
-                <FileDown className="h-4 w-4 mr-1" /> Export PDF
+              <Button variant="outline" size="sm" onClick={exportDashboardPDF} disabled={!!pdfProgress}>
+                <FileDown className="h-4 w-4 mr-1" /> {pdfProgress || "Export PDF"}
               </Button>
             )}
           </div>
@@ -418,13 +488,9 @@ export default function Dashboard() {
                   <Lightbulb className="h-4 w-4 text-primary" />
                   AI Analysis
                 </h3>
-                <div className="text-sm text-muted-foreground leading-relaxed prose prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{
-                    __html: aiResponse
-                      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-                      .replace(/\n/g, "<br/>"),
-                  }}
-                />
+                <div className="text-sm text-muted-foreground leading-relaxed prose prose-sm max-w-none">
+                  <ReactMarkdown>{aiResponse}</ReactMarkdown>
+                </div>
               </div>
             )}
           </div>
@@ -452,20 +518,26 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Charts grid */}
+            {/* Charts grid with drag-to-reorder */}
             {charts.length > 0 && (
-              <div id="chart-grid" className="grid gap-4 md:grid-cols-2">
-                {charts.map(chart => (
-                  <ChartCard
-                    key={chart.id}
-                    config={chart}
-                    onRemove={removeChart}
-                    filteredData={getFilteredData()}
-                    slicerFilters={slicerFilters}
-                    onSlicerToggle={handleSlicerToggle}
-                  />
-                ))}
-              </div>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={charts.map(c => c.id)} strategy={rectSortingStrategy}>
+                  <div id="chart-grid" className="grid gap-4 md:grid-cols-2">
+                    {charts.map(chart => (
+                      <ChartCard
+                        key={chart.id}
+                        config={chart}
+                        onRemove={removeChart}
+                        onTitleChange={handleTitleChange}
+                        filteredData={filteredData}
+                        slicerFilters={slicerFilters}
+                        onSlicerToggle={handleSlicerToggle}
+                        sortable
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
             )}
 
             {/* Loading */}
@@ -476,11 +548,25 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Empty state */}
+            {/* Empty state with suggestions */}
             {charts.length === 0 && !isProcessing && (
-              <div className="text-center py-12 rounded-lg border border-dashed border-border">
-                <p className="text-muted-foreground text-sm">Your visualizations will appear here.</p>
-                <p className="text-muted-foreground text-xs mt-1">Try a prompt or click a visual type above.</p>
+              <div className="text-center py-12 rounded-lg border border-dashed border-border space-y-4">
+                <Lightbulb className="h-8 w-8 text-primary mx-auto" />
+                <div>
+                  <p className="text-foreground font-medium">No charts yet — try one of these:</p>
+                  <p className="text-muted-foreground text-xs mt-1">Click a suggestion or type your own prompt above.</p>
+                </div>
+                <div className="flex flex-wrap justify-center gap-2 max-w-lg mx-auto">
+                  {emptyStateSuggestions.map(s => (
+                    <button
+                      key={s}
+                      onClick={() => handlePrompt(s)}
+                      className="rounded-full border border-border bg-card px-4 py-2 text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 

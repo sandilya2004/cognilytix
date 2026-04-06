@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Brain, Upload, Sparkles, BarChart3, Download, ArrowRight } from "lucide-react";
+import { Brain, Upload, Sparkles, BarChart3, Download, ArrowRight, Moon, Sun } from "lucide-react";
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
 import heroImage from "@/assets/hero-dashboard.png";
 
 const features = [
@@ -38,6 +39,12 @@ const fadeUp = {
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("cognilytix_dark") === "true");
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", darkMode);
+    localStorage.setItem("cognilytix_dark", String(darkMode));
+  }, [darkMode]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -49,6 +56,9 @@ export default function LandingPage() {
             <span className="text-lg font-semibold text-foreground">Cognilytix AI</span>
           </div>
           <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDarkMode(!darkMode)} title="Toggle dark mode">
+              {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => navigate("/projects")}>
               My Projects
             </Button>
@@ -62,13 +72,7 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="container py-20 lg:py-32">
-        <motion.div
-          className="mx-auto max-w-3xl text-center"
-          initial="hidden"
-          animate="visible"
-          variants={fadeUp}
-          custom={0}
-        >
+        <motion.div className="mx-auto max-w-3xl text-center" initial="hidden" animate="visible" variants={fadeUp} custom={0}>
           <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
             Turn data into insights
             <br />
@@ -86,13 +90,7 @@ export default function LandingPage() {
           </div>
         </motion.div>
 
-        {/* Browser mockup */}
-        <motion.div
-          className="mt-16 mx-auto max-w-5xl"
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.7 }}
-        >
+        <motion.div className="mt-16 mx-auto max-w-5xl" initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.7 }}>
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-lg">
             <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-muted/50">
               <div className="flex gap-1.5">
@@ -116,15 +114,7 @@ export default function LandingPage() {
           </div>
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {features.map((feature, i) => (
-              <motion.div
-                key={feature.title}
-                className="rounded-lg border border-border bg-background p-6"
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeUp}
-                custom={i}
-              >
+              <motion.div key={feature.title} className="rounded-lg border border-border bg-background p-6" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}>
                 <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                   <feature.icon className="h-5 w-5 text-primary" />
                 </div>

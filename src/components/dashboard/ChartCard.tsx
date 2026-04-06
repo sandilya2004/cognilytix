@@ -1,4 +1,4 @@
-import { X, Download, TrendingUp, TrendingDown, Code, Database, MessageSquareText } from "lucide-react";
+import { X, Download, TrendingUp, TrendingDown, Code, Database, MessageSquareText, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ChartConfig } from "@/lib/chart-types";
 import {
@@ -9,6 +9,9 @@ import {
   ComposedChart,
 } from "recharts";
 import { useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 const COLORS = [
   "hsl(239, 84%, 67%)",
@@ -22,44 +25,71 @@ const COLORS = [
 interface ChartCardProps {
   config: ChartConfig;
   onRemove: (id: string) => void;
+  onTitleChange?: (id: string, newTitle: string) => void;
   filteredData?: Record<string, unknown>[] | null;
   slicerFilters?: Record<string, Set<string>>;
   onSlicerToggle?: (columnKey: string, value: string) => void;
+  sortable?: boolean;
 }
 
-export default function ChartCard({ config, onRemove, filteredData, slicerFilters, onSlicerToggle }: ChartCardProps) {
+export default function ChartCard({ config, onRemove, onTitleChange, filteredData, slicerFilters, onSlicerToggle, sortable }: ChartCardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [showCode, setShowCode] = useState<"none" | "sql" | "python">("none");
   const [explanation, setExplanation] = useState<string | null>(null);
   const [explaining, setExplaining] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(config.title);
 
-  const generateExplanation = () => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: config.id, disabled: !sortable });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const generateExplanation = async () => {
     if (explanation) { setExplanation(null); return; }
     setExplaining(true);
-    setTimeout(() => {
-      const { type, title, xKey, yKey, data, kpiValue, kpiLabel } = config;
+    try {
+      const sampleData = config.data.slice(0, 10);
+      const { data: aiData, error } = await supabase.functions.invoke("ai-chat", {
+        body: {
+          messages: [
+            {
+              role: "user",
+              content: `Explain this ${config.type} chart titled "${config.title}" in 2-3 sentences. X-axis: ${config.xKey}, Y-axis: ${config.yKey}. Sample data: ${JSON.stringify(sampleData)}`,
+            },
+          ],
+          context: `Chart type: ${config.type}, Title: ${config.title}, Data points: ${config.data.length}`,
+        },
+      });
+      if (error) throw error;
+      setExplanation(aiData?.response || "Unable to generate explanation.");
+    } catch {
+      const { type, title, xKey, yKey, data: chartData, kpiValue, kpiLabel } = config;
       let text = "";
       if (type === "kpi" || type === "card") {
-        text = `This KPI card shows that the **${kpiLabel}** is **${kpiValue}**. This metric provides a quick snapshot of overall performance. Monitor this value over time to spot improvement or decline.`;
+        text = `This KPI card shows that the **${kpiLabel}** is **${kpiValue}**.`;
       } else if (type === "pie") {
-        const topItem = data[0]?.[xKey!];
-        text = `This pie chart visualizes the proportion of **${yKey}** across different **${xKey}** categories. **${topItem}** holds the largest share. Use this to identify which segments dominate and where there may be untapped opportunities.`;
-      } else if (type === "line" || type === "area") {
-        const vals = data.map(d => Number(d[yKey!]) || 0);
-        const trend = vals.length > 1 && vals[vals.length - 1] > vals[0] ? "upward" : "downward or flat";
-        text = `This ${type} chart tracks **${yKey}** over **${xKey}**, revealing a **${trend} trend**. The pattern helps identify growth momentum or declining performance that needs attention.`;
-      } else if (type === "scatter") {
-        text = `This scatter plot examines the relationship between **${xKey}** and **${yKey}**. Clusters of points may indicate correlations, while outliers could signal anomalies worth investigating.`;
-      } else if (type === "table" || type === "matrix") {
-        text = `This table summarizes key data points, sorted to highlight the most significant values in **${yKey}**. Use it as a reference for detailed analysis or to identify specific records of interest.`;
+        text = `This pie chart shows the distribution of **${yKey}** across **${xKey}** categories.`;
       } else {
-        const topVal = [...data].sort((a, b) => (Number(b[yKey!]) || 0) - (Number(a[yKey!]) || 0))[0];
-        text = `"${title}" compares **${yKey}** across **${xKey}** categories. **${topVal?.[xKey!]}** leads with the highest value. This visualization helps identify top performers and areas needing improvement.`;
+        const topVal = [...chartData].sort((a, b) => (Number(b[yKey!]) || 0) - (Number(a[yKey!]) || 0))[0];
+        text = `"${title}" compares **${yKey}** across **${xKey}**. **${topVal?.[xKey!]}** leads with the highest value.`;
       }
       setExplanation(text);
+    } finally {
       setExplaining(false);
-    }, 500);
+    }
   };
+
   const handleExportPNG = async () => {
     if (!ref.current) return;
     const { default: html2canvas } = await import("html2canvas");
@@ -75,9 +105,18 @@ export default function ChartCard({ config, onRemove, filteredData, slicerFilter
     link.click();
   };
 
+  const saveTitle = () => {
+    setEditingTitle(false);
+    const trimmed = titleDraft.trim();
+    if (trimmed && trimmed !== config.title) {
+      onTitleChange?.(config.id, trimmed);
+    } else {
+      setTitleDraft(config.title);
+    }
+  };
+
   const renderChart = () => {
     const { type, xKey, yKey, yKeys } = config;
-    // Use filtered data if available (from slicer), otherwise use config data
     const data = (type !== "slicer" && filteredData) ? filteredData : config.data;
 
     switch (type) {
@@ -207,14 +246,7 @@ export default function ChartCard({ config, onRemove, filteredData, slicerFilter
                 {data.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Pie>
               <Tooltip formatter={(value: number) => value.toLocaleString()} />
-              <Legend
-                layout="horizontal"
-                align="center"
-                verticalAlign="bottom"
-                iconSize={8}
-                iconType="circle"
-                wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
-              />
+              <Legend layout="horizontal" align="center" verticalAlign="bottom" iconSize={8} iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
             </PieChart>
           </ResponsiveContainer>
         );
@@ -302,7 +334,7 @@ export default function ChartCard({ config, onRemove, filteredData, slicerFilter
       case "narrative":
         return (
           <div className="p-4 text-sm text-muted-foreground leading-relaxed max-h-[280px] overflow-y-auto">
-            {config.narrativeText || `Analysis of ${config.yKey}: The data contains ${data.length} data points. The values range across multiple categories grouped by ${config.xKey}, showing patterns that can inform business decisions.`}
+            {config.narrativeText || `Analysis of ${config.yKey}: The data contains ${data.length} data points.`}
           </div>
         );
 
@@ -331,10 +363,7 @@ export default function ChartCard({ config, onRemove, filteredData, slicerFilter
               })}
             </div>
             {activeSet && activeSet.size > 0 && (
-              <button
-                className="text-xs text-primary mt-2 underline"
-                onClick={() => activeSet.forEach(v => onSlicerToggle?.(config.xKey!, v))}
-              >
+              <button className="text-xs text-primary mt-2 underline" onClick={() => activeSet.forEach(v => onSlicerToggle?.(config.xKey!, v))}>
                 Clear filters
               </button>
             )}
@@ -362,22 +391,34 @@ export default function ChartCard({ config, onRemove, filteredData, slicerFilter
           </div>
         );
 
-      case "funnel":
+      case "funnel": {
+        const sorted = [...data].sort((a, b) => (Number(b[config.yKey!]) || 0) - (Number(a[config.yKey!]) || 0)).slice(0, 6);
+        const maxVal = Math.max(...sorted.map(d => Number(d[config.yKey!]) || 1));
         return (
           <div className="flex flex-col items-center justify-center h-[280px] px-4 gap-1">
-            {data.slice(0, 6).map((row, i) => {
-              const maxVal = Math.max(...data.slice(0, 6).map(d => Number(d[config.yKey!]) || 1));
-              const pct = (Number(row[config.yKey!]) || 0) / maxVal;
+            {sorted.map((row, i) => {
+              const val = Number(row[config.yKey!]) || 0;
+              const pct = val / maxVal;
               return (
-                <div key={i} className="flex items-center gap-2 w-full" style={{ maxWidth: `${60 + pct * 40}%` }}>
-                  <div className="flex-1 text-center py-2 rounded text-xs font-medium text-primary-foreground" style={{ backgroundColor: COLORS[i % COLORS.length] }}>
-                    {String(row[config.xKey!])} — {Number(row[config.yKey!]).toLocaleString()}
+                <div key={i} className="flex items-center gap-2 w-full transition-all" style={{ maxWidth: `${40 + pct * 60}%` }}>
+                  <div
+                    className="flex-1 text-center py-2.5 text-xs font-medium text-primary-foreground"
+                    style={{
+                      backgroundColor: COLORS[i % COLORS.length],
+                      clipPath: i < sorted.length - 1
+                        ? "polygon(4% 0%, 96% 0%, 100% 100%, 0% 100%)"
+                        : "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)",
+                      borderRadius: i === 0 ? "6px 6px 0 0" : i === sorted.length - 1 ? "0 0 6px 6px" : undefined,
+                    }}
+                  >
+                    {String(row[config.xKey!])} — {val.toLocaleString()}
                   </div>
                 </div>
               );
             })}
           </div>
         );
+      }
 
       case "treemap":
         return (
@@ -469,9 +510,33 @@ export default function ChartCard({ config, onRemove, filteredData, slicerFilter
   };
 
   return (
-    <div ref={ref} className="rounded-lg border border-border bg-card overflow-hidden animate-fade-up">
+    <div ref={setNodeRef} style={style} className="rounded-lg border border-border bg-card overflow-hidden animate-fade-up">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <h4 className="font-medium text-foreground text-sm truncate mr-2">{config.title}</h4>
+        <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
+          {sortable && (
+            <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground shrink-0">
+              <GripVertical className="h-4 w-4" />
+            </button>
+          )}
+          {editingTitle ? (
+            <input
+              autoFocus
+              className="font-medium text-foreground text-sm bg-transparent border-b border-primary outline-none w-full"
+              value={titleDraft}
+              onChange={e => setTitleDraft(e.target.value)}
+              onBlur={saveTitle}
+              onKeyDown={e => { if (e.key === "Enter") saveTitle(); if (e.key === "Escape") { setTitleDraft(config.title); setEditingTitle(false); } }}
+            />
+          ) : (
+            <h4
+              className="font-medium text-foreground text-sm truncate cursor-pointer hover:text-primary transition-colors"
+              onClick={() => { setTitleDraft(config.title); setEditingTitle(true); }}
+              title="Click to edit title"
+            >
+              {config.title}
+            </h4>
+          )}
+        </div>
         <div className="flex items-center gap-1 shrink-0">
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={generateExplanation} title="Explain">
             <MessageSquareText className={`h-3.5 w-3.5 ${explanation ? "text-primary" : ""}`} />
@@ -492,7 +557,10 @@ export default function ChartCard({ config, onRemove, filteredData, slicerFilter
       </div>
       {explaining && (
         <div className="px-4 py-2 border-b border-border bg-primary/5">
-          <p className="text-xs text-muted-foreground animate-pulse">Analyzing chart...</p>
+          <div className="flex items-center gap-2">
+            <div className="h-3 w-3 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            <p className="text-xs text-muted-foreground">Getting AI explanation...</p>
+          </div>
         </div>
       )}
       {explanation && (
@@ -515,7 +583,7 @@ export default function ChartCard({ config, onRemove, filteredData, slicerFilter
           </pre>
         </div>
       )}
-      <div className="p-4">{renderChart()}</div>
+      <div ref={ref} className="p-4">{renderChart()}</div>
     </div>
   );
 }
