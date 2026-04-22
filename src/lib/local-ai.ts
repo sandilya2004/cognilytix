@@ -35,6 +35,7 @@ function detectChartType(prompt: string): ChartType {
   if (p.includes("waterfall")) return "waterfall";
   if (p.includes("gauge") || p.includes("meter")) return "gauge";
   if (p.includes("combo") || p.includes("combined")) return "combo";
+  if (p.includes("geo") || p.includes("map") || p.includes("region") || p.includes("country")) return "geo-map";
   if (p.includes("kpi") || p.includes("total") || p.includes("average") || p.includes("sum") || p.includes("count")) return "kpi";
   if (p.includes("table") || p.includes("summary") || p.includes("top")) return "table";
   return "bar";
@@ -278,6 +279,7 @@ export function createFromType(
     narrative: "Create a narrative story",
     slicer: "Create a slicer filter",
     "decomposition-tree": "Create a decomposition tree",
+    "geo-map": "Create a geographic map",
   };
   const prompt = typePromptMap[type] || "Create a bar chart";
   return interpretPrompt(prompt, columns, rows);
