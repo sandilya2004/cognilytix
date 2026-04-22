@@ -504,6 +504,44 @@ export default function ChartCard({ config, onRemove, onTitleChange, filteredDat
         );
       }
 
+      case "geo-map": {
+        const sorted = [...data]
+          .sort((a, b) => (Number(b[config.yKey!]) || 0) - (Number(a[config.yKey!]) || 0))
+          .slice(0, 10);
+        const maxVal = Math.max(...sorted.map(d => Number(d[config.yKey!]) || 1));
+        return (
+          <div className="h-[280px] overflow-y-auto px-2">
+            <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
+              <MapPin className="h-3.5 w-3.5 text-primary" />
+              <span>Geographic distribution by {config.xKey}</span>
+            </div>
+            <div className="space-y-2">
+              {sorted.map((row, i) => {
+                const val = Number(row[config.yKey!]) || 0;
+                const pct = (val / maxVal) * 100;
+                return (
+                  <div key={i} className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 w-28 shrink-0">
+                      <MapPin className="h-3 w-3 text-primary shrink-0" />
+                      <span className="text-xs text-foreground truncate">{String(row[config.xKey!])}</span>
+                    </div>
+                    <div className="flex-1 h-6 rounded-md bg-muted overflow-hidden relative">
+                      <div
+                        className="h-full rounded-md transition-all"
+                        style={{ width: `${pct}%`, backgroundColor: COLORS[i % COLORS.length], opacity: 0.85 }}
+                      />
+                    </div>
+                    <span className="text-xs font-medium text-foreground w-20 text-right tabular-nums">
+                      {val.toLocaleString()}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      }
+
       default:
         return <p className="text-muted-foreground text-center py-10">Unsupported chart type</p>;
     }
