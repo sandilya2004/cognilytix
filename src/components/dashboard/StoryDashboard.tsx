@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BookOpen, RefreshCw, Copy, Check } from "lucide-react";
+import { BookOpen, RefreshCw, Copy, Check, Baby } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ParsedData } from "@/lib/data-processing";
 import type { ChartConfig } from "@/lib/chart-types";
@@ -15,46 +15,78 @@ export default function StoryDashboard({ data, charts, summaryText }: StoryDashb
   const [story, setStory] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [eli10, setEli10] = useState(false);
 
-  const generateStory = async () => {
+  const generateStory = async (eli10Mode = eli10) => {
     setLoading(true);
     try {
       const chartsInfo = charts.map(c => `- ${c.title} (${c.type}): X=${c.xKey}, Y=${c.yKey}`).join("\n");
       const colInfo = data.columns.map(c => `${c.name} (${c.type})`).join(", ");
       const sampleRows = data.rows.slice(0, 5).map(r => JSON.stringify(r)).join("\n");
 
-      const prompt = `Based on the following data and visualizations, write a compelling data story that a business analyst would present to stakeholders. Include:
+      const audienceInstructions = eli10Mode
+        ? `Write this story so a 10-year-old can understand it. Use VERY simple words.
+Avoid jargon, percentages without explanation, and technical terms. Use friendly comparisons
+and short sentences. Replace business words like "ROI", "segment", "KPI" with plain words.
+Each section should feel like a friendly teacher explaining what the numbers mean.`
+        : `Write this as a real-time, client-ready presentation script — as if you are speaking
+directly to a business client in a meeting. Use a confident, narrative tone with concrete
+numbers and business meaning. Each section should be 2-4 sentences of FLOWING PROSE
+(not bullet points unless the section explicitly calls for them). Tell a STORY: set the
+scene, reveal what's happening, explain why it matters, and what to do next.
+Use specific numbers from the data to back up every claim.`;
 
-1. **Executive Summary** - One paragraph overview
-2. **Key Findings** - 3-5 bullet points of the most important discoveries
-3. **Trend Analysis** - What patterns emerge from the data
-4. **Recommendations** - 3 actionable business recommendations
-5. **Conclusion** - Brief wrap-up
+      const prompt = `You are a senior data storyteller. Build a CLIENT-READY data story from the
+dataset and visuals below. The story should sound like something a consultant would say
+out loud to a client — not a generic data summary.
 
+${audienceInstructions}
+
+Structure with these markdown sections (use ##):
+
+## 🎯 The Big Picture
+Set the scene in 2-3 sentences. What is this dataset about, and why should the client care?
+
+## 🔍 What the Numbers Are Telling Us
+The 3-5 most important things found in the data. ${eli10Mode ? "Use comparisons a child would get (like comparing to candy, classrooms, or pizza slices)." : "Reference specific numbers."}
+
+## 📈 Where the Story Is Heading
+The clearest trends or patterns — and what they suggest about the near future.
+
+## 💡 What We Recommend Doing
+3 concrete next steps the client should take. ${eli10Mode ? "Make each step feel like simple advice from a friend." : "Each should be specific and actionable."}
+
+## ✨ The Bottom Line
+One short paragraph the client can quote in a meeting.
+
+---
 Data Context:
 Columns: ${colInfo}
 Total Rows: ${data.rows.length}
-Sample: ${sampleRows}
+Sample rows: ${sampleRows}
 
-Charts Created:
-${chartsInfo || "No charts yet"}
+Visuals on the dashboard:
+${chartsInfo || "(none yet)"}
 
-${summaryText ? `Existing Summary:\n${summaryText}` : ""}
+${summaryText ? `Auto-generated summary:\n${summaryText}` : ""}
 
-Write in professional but accessible language. Use markdown formatting.`;
+Write the FULL story now. Use markdown. Do NOT include the [CREATE_VISUAL] tag.`;
 
       const { data: aiData, error } = await supabase.functions.invoke("ai-chat", {
-        body: { prompt, context: "" },
+        body: {
+          messages: [{ role: "user", content: prompt }],
+          context: "",
+        },
       });
 
       if (!error && aiData?.response) {
-        setStory(aiData.response);
+        setStory(aiData.response.replace(/\[CREATE_VISUAL\].*$/s, "").trim());
       } else {
         // Fallback local story
-        setStory(generateLocalStory(data, charts));
+        setStory(generateLocalStory(data, charts, eli10Mode));
       }
     } catch {
-      setStory(generateLocalStory(data, charts));
+      setStory(generateLocalStory(data, charts, eli10Mode));
     } finally {
       setLoading(false);
     }
@@ -66,6 +98,12 @@ Write in professional but accessible language. Use markdown formatting.`;
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const toggleEli10 = () => {
+    const next = !eli10;
+    setEli10(next);
+    if (story) generateStory(next);
+  };
+
   if (!story && !loading) {
     return (
       <div className="max-w-3xl mx-auto p-6">
@@ -75,12 +113,25 @@ Write in professional but accessible language. Use markdown formatting.`;
           </div>
           <h2 className="text-lg font-semibold text-foreground">Auto Story Generator</h2>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            Automatically create a data-driven narrative from your visuals and insights. Perfect for presentations and reports.
+            Generate a real-time, client-ready data story straight from your visuals and insights —
+            ready to read out loud in a meeting.
           </p>
-          <Button onClick={generateStory} size="lg">
-            <BookOpen className="h-4 w-4 mr-2" />
-            Create Story
-          </Button>
+          <div className="flex flex-col items-center gap-3">
+            <Button onClick={() => generateStory()} size="lg">
+              <BookOpen className="h-4 w-4 mr-2" />
+              Create Story
+            </Button>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+              <input
+                type="checkbox"
+                className="rounded border-border accent-primary"
+                checked={eli10}
+                onChange={(e) => setEli10(e.target.checked)}
+              />
+              <Baby className="h-3.5 w-3.5" />
+              Explain Like I'm 10 mode (optional)
+            </label>
+          </div>
           {charts.length === 0 && (
             <p className="text-xs text-muted-foreground">Tip: Create some charts first for a richer story.</p>
           )}
@@ -94,7 +145,9 @@ Write in professional but accessible language. Use markdown formatting.`;
       {loading ? (
         <div className="rounded-lg border border-border bg-card p-12 text-center space-y-3">
           <div className="h-10 w-10 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto" />
-          <p className="text-sm text-muted-foreground">Crafting your data story...</p>
+          <p className="text-sm text-muted-foreground">
+            {eli10 ? "Rewriting in simple words..." : "Crafting your client-ready story..."}
+          </p>
         </div>
       ) : (
         <div className="rounded-lg border border-border bg-card overflow-hidden animate-fade-up">
@@ -102,13 +155,28 @@ Write in professional but accessible language. Use markdown formatting.`;
             <div className="flex items-center gap-2">
               <BookOpen className="h-4 w-4 text-primary" />
               <h3 className="font-semibold text-foreground text-sm">Data Story</h3>
+              {eli10 && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-medium">
+                  <Baby className="h-3 w-3" />
+                  ELI10
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-1">
+              <Button
+                variant={eli10 ? "default" : "ghost"}
+                size="sm"
+                onClick={toggleEli10}
+                title="Toggle Explain Like I'm 10 mode"
+              >
+                <Baby className="h-4 w-4 mr-1" />
+                ELI10
+              </Button>
               <Button variant="ghost" size="sm" onClick={handleCopy}>
                 {copied ? <Check className="h-4 w-4 mr-1" /> : <Copy className="h-4 w-4 mr-1" />}
                 {copied ? "Copied" : "Copy"}
               </Button>
-              <Button variant="ghost" size="sm" onClick={generateStory}>
+              <Button variant="ghost" size="sm" onClick={() => generateStory()}>
                 <RefreshCw className="h-4 w-4 mr-1" /> Regenerate
               </Button>
             </div>
