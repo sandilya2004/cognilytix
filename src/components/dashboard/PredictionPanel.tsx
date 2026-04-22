@@ -4,11 +4,10 @@ import { Button } from "@/components/ui/button";
 import type { ParsedData } from "@/lib/data-processing";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-  BarChart, Bar, Cell, ComposedChart, Area,
+  Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  BarChart, Bar, Cell, ComposedChart,
 } from "recharts";
 
-const COLORS = ["hsl(239, 84%, 67%)", "hsl(160, 84%, 39%)", "hsl(32, 95%, 44%)", "hsl(280, 65%, 60%)"];
 const FORECAST_COLOR = "hsl(160, 84%, 39%)";
 const ACTUAL_COLOR = "hsl(239, 84%, 67%)";
 
