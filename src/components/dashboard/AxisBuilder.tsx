@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { GripVertical, X, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,8 @@ import type { ChartType } from "@/lib/chart-types";
 interface AxisBuilderProps {
   columns: DataColumn[];
   onCreateChart: (xKey: string, yKeys: string[], chartType: ChartType) => void;
+  presetType?: ChartType | null;
+  onPresetConsumed?: () => void;
 }
 
 const chartOptions: { value: ChartType; label: string }[] = [
@@ -21,13 +23,23 @@ const chartOptions: { value: ChartType; label: string }[] = [
   { value: "combo", label: "Combo" },
   { value: "radar", label: "Radar" },
   { value: "funnel", label: "Funnel" },
+  { value: "geo-map", label: "Geographic Map" },
 ];
 
-export default function AxisBuilder({ columns, onCreateChart }: AxisBuilderProps) {
+export default function AxisBuilder({ columns, onCreateChart, presetType, onPresetConsumed }: AxisBuilderProps) {
   const [xAxis, setXAxis] = useState<string | null>(null);
   const [yAxes, setYAxes] = useState<string[]>([]);
   const [chartType, setChartType] = useState<ChartType>("bar");
   const [draggedCol, setDraggedCol] = useState<string | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // When a visual is picked from the VisualPicker, preset chartType + scroll into view
+  useEffect(() => {
+    if (!presetType) return;
+    setChartType(presetType);
+    rootRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    onPresetConsumed?.();
+  }, [presetType, onPresetConsumed]);
 
   const handleDragStart = (colName: string) => {
     setDraggedCol(colName);
@@ -61,8 +73,11 @@ export default function AxisBuilder({ columns, onCreateChart }: AxisBuilderProps
   };
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4 animate-fade-up">
-      <h3 className="text-sm font-semibold text-foreground mb-3">Drag & Drop Axis Builder</h3>
+    <div ref={rootRef} className="rounded-lg border border-border bg-card p-4 animate-fade-up">
+      <h3 className="text-sm font-semibold text-foreground mb-3">
+        Drag & Drop Axis Builder
+        {presetType === undefined ? null : null}
+      </h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Available Columns */}
         <div className="space-y-2">
