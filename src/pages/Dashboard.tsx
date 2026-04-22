@@ -19,7 +19,7 @@ import PredictionInsightsPanel from "@/components/dashboard/PredictionInsightsPa
 import type { ParsedData } from "@/lib/data-processing";
 import type { SheetInfo } from "@/lib/data-processing";
 import type { ChartConfig, ChartType } from "@/lib/chart-types";
-import { interpretPrompt, createFromType } from "@/lib/local-ai";
+import { interpretPrompt } from "@/lib/local-ai";
 import { generateSummary } from "@/lib/summarize";
 import { toast } from "sonner";
 import { getProjects, saveProjects, type Project } from "@/pages/Projects";
