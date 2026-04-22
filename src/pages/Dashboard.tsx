@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Brain, FileDown, FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard, BookOpen, TrendingUp, Moon, Sun } from "lucide-react";
+import { Brain, FileDown, FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard, BookOpen, TrendingUp, Moon, Sun, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FileUpload from "@/components/dashboard/FileUpload";
 import PromptBar from "@/components/dashboard/PromptBar";
@@ -15,6 +15,7 @@ import SheetSelectorDialog from "@/components/dashboard/SheetSelectorDialog";
 import AxisBuilder from "@/components/dashboard/AxisBuilder";
 import StoryDashboard from "@/components/dashboard/StoryDashboard";
 import PredictionPanel from "@/components/dashboard/PredictionPanel";
+import PredictionInsightsPanel from "@/components/dashboard/PredictionInsightsPanel";
 import type { ParsedData } from "@/lib/data-processing";
 import type { SheetInfo } from "@/lib/data-processing";
 import type { ChartConfig, ChartType } from "@/lib/chart-types";
@@ -38,7 +39,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 
-type Tab = "upload" | "preview" | "health" | "insights" | "dashboard" | "story" | "prediction";
+type Tab = "upload" | "preview" | "health" | "insights" | "dashboard" | "story" | "prediction" | "prediction-insights";
 
 const tabs: { id: Tab; label: string; icon: React.ElementType; needsData: boolean }[] = [
   { id: "upload", label: "Upload", icon: Upload, needsData: false },
@@ -48,6 +49,7 @@ const tabs: { id: Tab; label: string; icon: React.ElementType; needsData: boolea
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, needsData: true },
   { id: "story", label: "Story", icon: BookOpen, needsData: true },
   { id: "prediction", label: "Prediction", icon: TrendingUp, needsData: true },
+  { id: "prediction-insights", label: "Prediction Insights", icon: Sparkles, needsData: true },
 ];
 
 const emptyStateSuggestions = [
