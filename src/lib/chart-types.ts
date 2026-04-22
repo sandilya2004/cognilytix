@@ -3,7 +3,8 @@ export type ChartType =
   | "area" | "radar" | "funnel" | "treemap" | "histogram" | "heatmap"
   | "waterfall" | "gauge" | "combo"
   | "clustered-bar" | "clustered-column" | "stacked-bar" | "stacked-column"
-  | "matrix" | "card" | "narrative" | "slicer" | "decomposition-tree";
+  | "matrix" | "card" | "narrative" | "slicer" | "decomposition-tree"
+  | "geo-map";
 
 export interface ChartConfig {
   id: string;

@@ -2,7 +2,7 @@ import {
   BarChart3, LineChart, PieChart, Activity, Hash, Table2,
   AreaChart, Radar, Triangle, LayoutGrid, Layers, Thermometer,
   Droplets, Gauge, Combine, Columns3, BarChart2, AlignLeft,
-  Filter, Image, GitBranch, MessageSquare, Grid3X3, FileCode, CreditCard, BookOpen,
+  Filter, Image, GitBranch, MessageSquare, Grid3X3, FileCode, CreditCard, BookOpen, Map,
 } from "lucide-react";
 import type { ChartType } from "@/lib/chart-types";
 
@@ -35,6 +35,7 @@ const visuals: { type: ChartType; label: string; icon: React.ElementType }[] = [
   { type: "slicer", label: "Slicer", icon: Filter },
   { type: "narrative", label: "Narrative", icon: BookOpen },
   { type: "decomposition-tree", label: "Decomp Tree", icon: GitBranch },
+  { type: "geo-map", label: "Geographic Map", icon: Map },
 ];
 
 export default function VisualPicker({ onSelect }: VisualPickerProps) {
