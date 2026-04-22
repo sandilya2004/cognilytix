@@ -5,8 +5,16 @@ import type { ParsedData } from "@/lib/data-processing";
 import { supabase } from "@/integrations/supabase/client";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-  BarChart, Bar,
+  BarChart, Bar, Cell, ComposedChart, Area,
 } from "recharts";
+
+const COLORS = ["hsl(239, 84%, 67%)", "hsl(160, 84%, 39%)", "hsl(32, 95%, 44%)", "hsl(280, 65%, 60%)"];
+const FORECAST_COLOR = "hsl(160, 84%, 39%)";
+const ACTUAL_COLOR = "hsl(239, 84%, 67%)";
+
+// Pick a chart style per prediction index so visuals vary (bar / column / combo)
+const chartStyles = ["column", "bar", "combo", "column"] as const;
+type ChartStyle = typeof chartStyles[number];
 
 interface PredictionPanelProps {
   data: ParsedData;
@@ -161,23 +169,62 @@ Be concise and actionable.`,
 
       {/* Forecast Charts */}
       <div className="grid md:grid-cols-2 gap-4">
-        {predictions.map(p => (
-          <div key={p.column} className="rounded-lg border border-border bg-card p-4">
-            <h4 className="text-sm font-medium text-foreground mb-3">{p.column} — Forecast</h4>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={p.forecastData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
-                <XAxis dataKey="period" tick={{ fontSize: 11 }} stroke="hsl(220, 9%, 46%)" />
-                <YAxis tick={{ fontSize: 11 }} stroke="hsl(220, 9%, 46%)" />
-                <Tooltip />
-                <Legend iconSize={8} wrapperStyle={{ fontSize: 11 }} />
-                <Line type="monotone" dataKey="actual" stroke="hsl(239, 84%, 67%)" strokeWidth={2} dot={{ r: 3 }} connectNulls={false} />
-                <Line type="monotone" dataKey="predicted" stroke="hsl(160, 84%, 39%)" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} connectNulls={false} />
-              </LineChart>
-            </ResponsiveContainer>
-            <p className="text-xs text-muted-foreground mt-2">{p.recommendation}</p>
-          </div>
-        ))}
+        {predictions.map((p, idx) => {
+          const style: ChartStyle = chartStyles[idx % chartStyles.length];
+          return (
+            <div key={p.column} className="rounded-lg border border-border bg-card p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-medium text-foreground">{p.column} — Forecast</h4>
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+                  {style === "bar" ? "Bar" : style === "combo" ? "Combo" : "Column"}
+                </span>
+              </div>
+              <ResponsiveContainer width="100%" height={220}>
+                {style === "bar" ? (
+                  <BarChart data={p.forecastData} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
+                    <XAxis type="number" tick={{ fontSize: 11 }} stroke="hsl(220, 9%, 46%)" />
+                    <YAxis dataKey="period" type="category" tick={{ fontSize: 11 }} stroke="hsl(220, 9%, 46%)" width={40} />
+                    <Tooltip />
+                    <Legend iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                    <Bar dataKey="actual" fill={ACTUAL_COLOR} radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="predicted" fill={FORECAST_COLOR} radius={[0, 4, 4, 0]} fillOpacity={0.7} />
+                  </BarChart>
+                ) : style === "combo" ? (
+                  <ComposedChart data={p.forecastData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
+                    <XAxis dataKey="period" tick={{ fontSize: 11 }} stroke="hsl(220, 9%, 46%)" />
+                    <YAxis tick={{ fontSize: 11 }} stroke="hsl(220, 9%, 46%)" />
+                    <Tooltip />
+                    <Legend iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                    <Bar dataKey="actual" fill={ACTUAL_COLOR} radius={[4, 4, 0, 0]} />
+                    <Line type="monotone" dataKey="predicted" stroke={FORECAST_COLOR} strokeWidth={2.5} strokeDasharray="5 5" dot={{ r: 4, fill: FORECAST_COLOR }} connectNulls />
+                  </ComposedChart>
+                ) : (
+                  // Default: clustered column with distinct fills for forecast vs actual
+                  <BarChart data={p.forecastData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
+                    <XAxis dataKey="period" tick={{ fontSize: 11 }} stroke="hsl(220, 9%, 46%)" />
+                    <YAxis tick={{ fontSize: 11 }} stroke="hsl(220, 9%, 46%)" />
+                    <Tooltip />
+                    <Legend iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                    <Bar dataKey="actual" fill={ACTUAL_COLOR} radius={[4, 4, 0, 0]}>
+                      {p.forecastData.map((_, i) => (
+                        <Cell key={`a-${i}`} fill={ACTUAL_COLOR} />
+                      ))}
+                    </Bar>
+                    <Bar dataKey="predicted" fill={FORECAST_COLOR} radius={[4, 4, 0, 0]} fillOpacity={0.75}>
+                      {p.forecastData.map((_, i) => (
+                        <Cell key={`p-${i}`} fill={FORECAST_COLOR} fillOpacity={0.75} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                )}
+              </ResponsiveContainer>
+              <p className="text-xs text-muted-foreground mt-2">{p.recommendation}</p>
+            </div>
+          );
+        })}
       </div>
 
       {/* AI Insight */}
