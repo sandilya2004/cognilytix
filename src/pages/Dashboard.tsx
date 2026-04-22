@@ -80,6 +80,7 @@ export default function Dashboard() {
     return false;
   });
   const [pdfProgress, setPdfProgress] = useState<string | null>(null);
+  const [pendingChartType, setPendingChartType] = useState<ChartType | null>(null);
 
   // Dark mode effect
   useEffect(() => {
@@ -188,13 +189,10 @@ export default function Dashboard() {
   const handleVisualPick = useCallback(
     (type: ChartType) => {
       if (!data) return;
-      try {
-        const config = createFromType(type, data.columns, data.rows);
-        setCharts((prev) => [config, ...prev]);
-        toast.success(`Generated: ${config.title}`);
-      } catch {
-        toast.error("Could not create this visualization with current data.");
-      }
+      // Instead of auto-creating, prefill the AxisBuilder so the user can
+      // pick X / Y columns first. AxisBuilder handles the scroll.
+      setPendingChartType(type);
+      toast.info("Pick X and Y columns in the Axis Builder below.");
     },
     [data]
   );
@@ -511,7 +509,12 @@ export default function Dashboard() {
             <VisualPicker onSelect={handleVisualPick} />
 
             {/* Axis Builder */}
-            <AxisBuilder columns={data.columns} onCreateChart={handleAxisCreate} />
+            <AxisBuilder
+              columns={data.columns}
+              onCreateChart={handleAxisCreate}
+              presetType={pendingChartType}
+              onPresetConsumed={() => setPendingChartType(null)}
+            />
 
             {/* Summary */}
             {summaryText && (
