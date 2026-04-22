@@ -209,20 +209,29 @@ function renderMarkdown(text: string) {
   });
 }
 
-function generateLocalStory(data: ParsedData, charts: ChartConfig[]): string {
+function generateLocalStory(data: ParsedData, charts: ChartConfig[], eli10 = false): string {
   const numCols = data.columns.filter(c => c.type === "number");
   const catCols = data.columns.filter(c => c.type === "string");
   const lines: string[] = [];
 
-  lines.push("## Executive Summary\n");
-  lines.push(`This analysis examines a dataset of **${data.rows.length} records** across **${data.columns.length} fields**. ${charts.length} visualizations were created to uncover patterns and insights.\n`);
-
-  lines.push("## Key Findings\n");
+  if (eli10) {
+    lines.push("## 🎯 The Big Picture\n");
+    lines.push(`We looked at **${data.rows.length} rows** of information with **${data.columns.length} different things** to compare. Think of it like a giant scoreboard with lots of players. We made **${charts.length} pictures** to see who is winning.\n`);
+    lines.push("## 🔍 What the Numbers Are Telling Us\n");
+  } else {
+    lines.push("## 🎯 The Big Picture\n");
+    lines.push(`This analysis examines a dataset of **${data.rows.length} records** across **${data.columns.length} fields**. ${charts.length} visualizations were created to uncover patterns and insights.\n`);
+    lines.push("## 🔍 What the Numbers Are Telling Us\n");
+  }
   for (const col of numCols.slice(0, 3)) {
     const vals = data.rows.map(r => Number(r[col.name]) || 0);
     const sum = vals.reduce((a, b) => a + b, 0);
     const avg = sum / vals.length;
-    lines.push(`- **${col.name}**: Total ${sum.toLocaleString()}, Average ${avg.toFixed(1)}`);
+    if (eli10) {
+      lines.push(`- The total of **${col.name}** adds up to **${sum.toLocaleString()}**, and on average each row has about **${avg.toFixed(1)}** — like the average score per player.`);
+    } else {
+      lines.push(`- **${col.name}**: Total ${sum.toLocaleString()}, Average ${avg.toFixed(1)}`);
+    }
   }
 
   if (catCols.length > 0 && numCols.length > 0) {
@@ -235,20 +244,31 @@ function generateLocalStory(data: ParsedData, charts: ChartConfig[]): string {
     }
     const sorted = [...groups.entries()].sort((a, b) => b[1] - a[1]);
     if (sorted.length > 0) {
-      lines.push(`\n## Top Performers\n`);
+      lines.push(`\n## 📈 Where the Story Is Heading\n`);
+      if (eli10) lines.push(`Here are the top winners — the ones with the biggest scores for **${val}**:\n`);
       sorted.slice(0, 5).forEach(([k, v], i) => {
         lines.push(`${i + 1}. **${k}** — ${v.toLocaleString()}`);
       });
     }
   }
 
-  lines.push("\n## Recommendations\n");
-  lines.push("- Focus resources on top-performing categories to maximize ROI");
-  lines.push("- Investigate underperforming segments for improvement opportunities");
-  lines.push("- Continue monitoring key metrics with regular data updates\n");
+  lines.push("\n## 💡 What We Recommend Doing\n");
+  if (eli10) {
+    lines.push("- Spend more time on the things that are doing great — they bring the most points.");
+    lines.push("- Look at the things doing badly and ask: *why aren't they working?*");
+    lines.push("- Keep checking the scoreboard often so we know if things get better or worse.\n");
+  } else {
+    lines.push("- Focus resources on top-performing categories to maximize ROI");
+    lines.push("- Investigate underperforming segments for improvement opportunities");
+    lines.push("- Continue monitoring key metrics with regular data updates\n");
+  }
 
-  lines.push("## Conclusion\n");
-  lines.push("The data reveals clear patterns that can drive strategic decisions. Regular analysis will help track progress toward goals.");
+  lines.push("## ✨ The Bottom Line\n");
+  if (eli10) {
+    lines.push("The numbers tell a clear story: some things are winning, some need help, and we know where to look next.");
+  } else {
+    lines.push("The data reveals clear patterns that can drive strategic decisions. Regular analysis will help track progress toward goals.");
+  }
 
   return lines.join("\n");
 }
