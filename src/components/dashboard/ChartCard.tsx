@@ -1,4 +1,4 @@
-import { X, Download, TrendingUp, TrendingDown, Code, Database, MessageSquareText, GripVertical } from "lucide-react";
+import { X, Download, TrendingUp, TrendingDown, Code, Database, MessageSquareText, GripVertical, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ChartConfig } from "@/lib/chart-types";
 import {
