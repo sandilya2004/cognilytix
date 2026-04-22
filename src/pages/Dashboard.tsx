@@ -598,6 +598,11 @@ export default function Dashboard() {
         {activeTab === "prediction" && data && (
           <PredictionPanel data={data} />
         )}
+
+        {/* PREDICTION INSIGHTS TAB */}
+        {activeTab === "prediction-insights" && data && (
+          <PredictionInsightsPanel data={data} />
+        )}
       </main>
 
       {/* Sheet Selector Dialog */}
