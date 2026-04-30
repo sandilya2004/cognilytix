@@ -35,7 +35,17 @@ Deno.serve(async (req) => {
     const found = existing?.users?.find((u) => u.email === email);
 
     if (found) {
-      return new Response(JSON.stringify({ ok: true, status: "already_exists", email, login_id: userId }), {
+      // Update password + ensure admin role
+      const { error: updErr } = await admin.auth.admin.updateUserById(found.id, {
+        password,
+        email_confirm: true,
+      });
+      if (updErr) throw updErr;
+      await admin.from("user_roles").upsert(
+        { user_id: found.id, role: "admin" },
+        { onConflict: "user_id,role" },
+      );
+      return new Response(JSON.stringify({ ok: true, status: "updated", email, login_id: userId, user_id: found.id }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
