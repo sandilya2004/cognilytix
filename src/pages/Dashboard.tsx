@@ -1,7 +1,8 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Brain, FileDown, FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard, BookOpen, TrendingUp, Moon, Sun, Sparkles } from "lucide-react";
+import { Brain, FileDown, FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard, BookOpen, TrendingUp, Moon, Sun, Sparkles, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 import FileUpload from "@/components/dashboard/FileUpload";
 import PromptBar from "@/components/dashboard/PromptBar";
 import ChatPanel, { type ChatMessage } from "@/components/dashboard/ChatPanel";
@@ -61,6 +62,7 @@ const emptyStateSuggestions = [
 export default function Dashboard() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("upload");
   const [data, setData] = useState<ParsedData | null>(null);
   const [fileName, setFileName] = useState("");
@@ -410,6 +412,9 @@ export default function Dashboard() {
                 <FileDown className="h-4 w-4 mr-1" /> {pdfProgress || "Export PDF"}
               </Button>
             )}
+            <Button variant="ghost" size="sm" onClick={async () => { await signOut(); navigate("/auth"); }} title={user?.email ?? "Sign out"}>
+              <LogOut className="h-4 w-4 mr-1" /> Sign out
+            </Button>
           </div>
         </div>
       </header>

@@ -1,9 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Brain, Upload, Sparkles, BarChart3, Download, ArrowRight, Moon, Sun } from "lucide-react";
+import { Brain, Upload, Sparkles, BarChart3, Download, ArrowRight, Moon, Sun, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import heroImage from "@/assets/hero-dashboard.png";
+import { useAuth } from "@/hooks/useAuth";
 
 const features = [
   {
@@ -39,6 +40,7 @@ const fadeUp = {
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("cognilytix_dark") === "true");
 
   useEffect(() => {
@@ -65,6 +67,9 @@ export default function LandingPage() {
             <Button variant="hero" size="lg" onClick={() => navigate("/dashboard")}>
               Start Analyzing
               <ArrowRight className="ml-1 h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={async () => { await signOut(); navigate("/auth"); }} title="Sign out">
+              <LogOut className="h-4 w-4" />
             </Button>
           </div>
         </div>
