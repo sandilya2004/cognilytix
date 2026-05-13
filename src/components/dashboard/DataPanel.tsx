@@ -1,4 +1,4 @@
-import { Database, FileSpreadsheet, Layers, Upload } from "lucide-react";
+import { Database, FileSpreadsheet, Layers, Upload, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ParsedData } from "@/lib/data-processing";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ interface DataPanelProps {
   onUploadClick: () => void;
   onSheetSelectorClick?: () => void;
   showSheetSelector?: boolean;
+  onReset?: () => void;
 }
 
 const typeBadge: Record<string, string> = {
@@ -18,7 +19,7 @@ const typeBadge: Record<string, string> = {
   boolean: "bg-chart-4/10 text-chart-4 border-chart-4/20",
 };
 
-export default function DataPanel({ data, fileName, onUploadClick, onSheetSelectorClick, showSheetSelector }: DataPanelProps) {
+export default function DataPanel({ data, fileName, onUploadClick, onSheetSelectorClick, showSheetSelector, onReset }: DataPanelProps) {
   if (!data) {
     return (
       <div className="rounded-lg border border-border bg-card p-4 text-center space-y-3">
@@ -113,11 +114,13 @@ export default function DataPanel({ data, fileName, onUploadClick, onSheetSelect
         </Button>
       )}
 
-      {/* Analyze button */}
-      <Button className="w-full" size="sm" onClick={onUploadClick}>
-        <Database className="h-3.5 w-3.5 mr-1.5" />
-        Analyze Data
-      </Button>
+      {/* Reset / re-upload */}
+      {onReset && (
+        <Button className="w-full" size="sm" variant="outline" onClick={onReset}>
+          <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+          Reset & Upload Different File
+        </Button>
+      )}
     </div>
   );
 }
