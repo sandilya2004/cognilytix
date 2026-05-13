@@ -129,8 +129,18 @@ export default function Dashboard() {
     setActiveTab("preview");
   }, []);
 
-  const handleDataChange = useCallback((newData: ParsedData) => {
-    setData(newData);
+  const handleReset = useCallback(() => {
+    setData(null);
+    setFileName("");
+    setCharts([]);
+    setSummaryText("");
+    setAiResponse("");
+    setChatMessages([]);
+    setSlicerFilters({});
+    setExcelSheets([]);
+    setExcelFile(null);
+    setActiveTab("upload");
+    toast.success("Cleared current data — upload a new file.");
   }, []);
 
   const getDataContext = useCallback(() => {
@@ -472,14 +482,15 @@ export default function Dashboard() {
               onUploadClick={() => setActiveTab("upload")}
               showSheetSelector={excelSheets.length > 0}
               onSheetSelectorClick={() => setSheetSelectorOpen(true)}
+              onReset={handleReset}
             />
           </div>
         )}
 
         {/* HEALTH CHECK TAB */}
         {activeTab === "health" && data && (
-          <div className="max-w-4xl mx-auto p-6">
-            <DataHealthCheck data={data} onDataFixed={handleDataChange} />
+          <div className="max-w-5xl mx-auto p-6">
+            <DataHealthCheck data={data} />
           </div>
         )}
 

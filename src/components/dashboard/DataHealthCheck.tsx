@@ -1,20 +1,18 @@
 import { useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, Trash2, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { AlertTriangle, CheckCircle2, Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { ParsedData } from "@/lib/data-processing";
-import { toast } from "sonner";
 
 interface DataHealthCheckProps {
   data: ParsedData;
-  onDataFixed?: (data: ParsedData) => void;
 }
 
 interface Issue {
-  type: "missing" | "duplicate" | "dtype" | "outlier" | "empty";
+  type: "missing" | "duplicate" | "dtype" | "outlier" | "empty" | "formatting";
   severity: "high" | "medium" | "low";
+  title: string;
   message: string;
-  suggestion: string;
+  excelFix: string[];
   column?: string;
   count?: number;
 }
@@ -42,8 +40,14 @@ function analyzeHealth(data: ParsedData): Issue[] {
         severity,
         column: col.name,
         count: missing,
-        message: `${pct}% missing values in "${col.name}" (${missing} of ${sampleSize} rows)`,
-        suggestion: "Consider removing rows with missing values or filling them with averages/defaults.",
+        title: `Missing Values in "${col.name}"`,
+        message: `${pct}% of rows are blank (${missing} of ${sampleSize}).`,
+        excelFix: [
+          `Select the "${col.name}" column header.`,
+          "On the Data tab, click Filter, then open the column's filter and tick (Blanks).",
+          "Fill the blank cells manually, or use a formula like =IFERROR(AVERAGE(range),0) for numeric data.",
+          "Remove the filter when done (Data → Clear).",
+        ],
       });
     }
   });
@@ -58,8 +62,13 @@ function analyzeHealth(data: ParsedData): Issue[] {
         type: "empty",
         severity: "high",
         column: col.name,
-        message: `Column "${col.name}" has no useful data`,
-        suggestion: "This column can be safely removed — it contains no values.",
+        title: `Empty Column "${col.name}"`,
+        message: "This column contains no values at all.",
+        excelFix: [
+          `Right-click the "${col.name}" column header in Excel.`,
+          "Choose Delete to remove the column entirely.",
+          "Save the file and re-upload.",
+        ],
       });
     }
   });
@@ -78,8 +87,14 @@ function analyzeHealth(data: ParsedData): Issue[] {
       type: "duplicate",
       severity,
       count: dupes,
-      message: `${dupes} duplicate rows detected`,
-      suggestion: "Remove duplicate rows to improve accuracy and avoid counting things twice.",
+      title: "Duplicate Rows Found",
+      message: `${dupes} fully duplicated rows detected.`,
+      excelFix: [
+        "Select your full data range (Ctrl+A inside the table).",
+        "Go to Data → Remove Duplicates.",
+        "Keep all columns ticked and click OK.",
+        "Save and re-upload the cleaned file.",
+      ],
     });
   }
 
@@ -98,8 +113,14 @@ function analyzeHealth(data: ParsedData): Issue[] {
         type: "dtype",
         severity: "medium",
         column: col.name,
-        message: `Column "${col.name}" looks numeric but is stored as text`,
-        suggestion: "Convert this column to number format so charts and calculations work correctly.",
+        title: `Incorrect Data Type in "${col.name}"`,
+        message: "Values look like numbers but are stored as text — charts and math won't work correctly.",
+        excelFix: [
+          `Select the "${col.name}" column.`,
+          "Press Ctrl+1 to open Format Cells.",
+          "Choose Number (or Currency) and click OK.",
+          "If values still show as text, type 1 in an empty cell, copy it, select the column, and use Paste Special → Multiply.",
+        ],
       });
     }
   });
@@ -124,8 +145,47 @@ function analyzeHealth(data: ParsedData): Issue[] {
         severity,
         column: col.name,
         count: outliers,
-        message: `${outliers} possible outliers in "${col.name}"`,
-        suggestion: "Check these unusual values — they could be errors or genuinely extreme data points.",
+        title: `Possible Outliers in "${col.name}"`,
+        message: `${outliers} values are far outside the typical range — could be errors or genuine extremes.`,
+        excelFix: [
+          `Sort the "${col.name}" column from largest to smallest (Data → Sort).`,
+          "Inspect the top and bottom values for typos or wrong units.",
+          "Correct or delete invalid rows. Keep them if they're genuine.",
+          "You can also use Conditional Formatting → Top/Bottom Rules to highlight extremes.",
+        ],
+      });
+    }
+  });
+
+  // Inconsistent formatting in string columns (mixed casing / leading-trailing spaces)
+  columns.forEach((col) => {
+    if (col.type !== "string") return;
+    const seenVals = new Map<string, Set<string>>();
+    sample.forEach((r) => {
+      const v = r[col.name];
+      if (v === null || v === undefined || v === "") return;
+      const raw = String(v);
+      const norm = raw.trim().toLowerCase();
+      if (!seenVals.has(norm)) seenVals.set(norm, new Set());
+      seenVals.get(norm)!.add(raw);
+    });
+    let inconsistencies = 0;
+    seenVals.forEach((forms) => {
+      if (forms.size > 1) inconsistencies++;
+    });
+    if (inconsistencies >= 3) {
+      issues.push({
+        type: "formatting",
+        severity: inconsistencies > 10 ? "medium" : "low",
+        column: col.name,
+        count: inconsistencies,
+        title: `Inconsistent Formatting in "${col.name}"`,
+        message: `${inconsistencies} values have multiple variants (different casing or extra spaces).`,
+        excelFix: [
+          `Select the "${col.name}" column.`,
+          "Use Find & Replace (Ctrl+H) to standardize casing or remove extra spaces.",
+          "Or insert a helper column with =TRIM(PROPER(A2)) and copy-paste values back.",
+        ],
       });
     }
   });
@@ -134,72 +194,24 @@ function analyzeHealth(data: ParsedData): Issue[] {
 }
 
 const severityConfig = {
-  high: { icon: "🔴", label: "High", className: "border-red-500/30 bg-red-500/5" },
-  medium: { icon: "🟡", label: "Medium", className: "border-amber-500/30 bg-amber-500/5" },
-  low: { icon: "🟢", label: "Low", className: "border-green-500/30 bg-green-500/5" },
+  high: { icon: "🔴", label: "High Severity", className: "border-l-4 border-l-red-500 bg-red-500/5" },
+  medium: { icon: "🟡", label: "Medium Severity", className: "border-l-4 border-l-amber-500 bg-amber-500/5" },
+  low: { icon: "🟢", label: "Low Severity", className: "border-l-4 border-l-green-500 bg-green-500/5" },
 };
 
-export default function DataHealthCheck({ data, onDataFixed }: DataHealthCheckProps) {
+export default function DataHealthCheck({ data }: DataHealthCheckProps) {
   const issues = useMemo(() => analyzeHealth(data), [data]);
-  const [collapsed, setCollapsed] = useState(issues.length === 0);
-
-  const handleFixData = () => {
-    let fixedRows = [...data.rows];
-    let fixedCols = [...data.columns];
-    let fixes = 0;
-
-    // Remove duplicate rows
-    const seen = new Set<string>();
-    const deduped = fixedRows.filter((row) => {
-      const key = JSON.stringify(row);
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-    fixes += fixedRows.length - deduped.length;
-    fixedRows = deduped;
-
-    // Remove empty columns
-    const emptyCols = fixedCols.filter((col) =>
-      fixedRows.every((r) => r[col.name] === null || r[col.name] === undefined || r[col.name] === "")
-    );
-    if (emptyCols.length > 0) {
-      const emptyNames = new Set(emptyCols.map((c) => c.name));
-      fixedCols = fixedCols.filter((c) => !emptyNames.has(c.name));
-      fixedRows = fixedRows.map((r) => {
-        const nr = { ...r };
-        emptyNames.forEach((n) => delete nr[n]);
-        return nr;
-      });
-      fixes += emptyCols.length;
-    }
-
-    // Fill missing numeric values with column median
-    fixedCols.forEach((col) => {
-      if (col.type !== "number") return;
-      const vals = fixedRows.map((r) => Number(r[col.name])).filter((v) => !isNaN(v));
-      if (vals.length === 0) return;
-      vals.sort((a, b) => a - b);
-      const median = vals[Math.floor(vals.length / 2)];
-      fixedRows.forEach((r) => {
-        if (r[col.name] === null || r[col.name] === undefined || r[col.name] === "") {
-          r[col.name] = median;
-          fixes++;
-        }
-      });
-    });
-
-    onDataFixed?.({ columns: fixedCols, rows: fixedRows, rawHeaders: fixedCols.map((c) => c.name) });
-    toast.success(`Applied ${fixes} fixes to your data!`);
-  };
+  const [expandedIdx, setExpandedIdx] = useState<number | null>(0);
 
   if (issues.length === 0) {
     return (
-      <div className="rounded-lg border border-green-500/30 bg-green-500/5 p-4 flex items-center gap-3">
-        <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+      <div className="rounded-lg border border-green-500/30 bg-green-500/5 p-6 flex items-center gap-4">
+        <CheckCircle2 className="h-8 w-8 text-green-600 shrink-0" />
         <div>
-          <p className="text-sm font-semibold text-foreground">Data Health Check</p>
-          <p className="text-xs text-muted-foreground">✅ Your data looks clean and ready for analysis!</p>
+          <p className="text-base font-semibold text-foreground">Data Health Check</p>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            ✅ No major data quality issues detected. Your data looks clean and ready for analysis!
+          </p>
         </div>
       </div>
     );
@@ -207,56 +219,68 @@ export default function DataHealthCheck({ data, onDataFixed }: DataHealthCheckPr
 
   const highCount = issues.filter((i) => i.severity === "high").length;
   const medCount = issues.filter((i) => i.severity === "medium").length;
+  const lowCount = issues.filter((i) => i.severity === "low").length;
 
   return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden">
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 text-amber-500" />
-          <span className="text-sm font-semibold text-foreground">Data Health Check</span>
-          <Badge variant="secondary" className="text-[10px]">{issues.length} issues</Badge>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {highCount > 0 && <span className="text-[10px]">🔴 {highCount}</span>}
-          {medCount > 0 && <span className="text-[10px]">🟡 {medCount}</span>}
-          <span className="text-xs text-muted-foreground">{collapsed ? "▸" : "▾"}</span>
-        </div>
-      </button>
-
-      {!collapsed && (
-        <div className="border-t border-border">
-          <div className="divide-y divide-border max-h-[300px] overflow-y-auto">
-            {issues.map((issue, i) => {
-              const sev = severityConfig[issue.severity];
-              return (
-                <div key={i} className={`px-4 py-3 ${sev.className}`}>
-                  <div className="flex items-start gap-2">
-                    <span className="text-sm mt-0.5">{sev.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-foreground">{issue.message}</p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1">
-                        <Sparkles className="h-3 w-3 shrink-0" />
-                        {issue.suggestion}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+    <div className="space-y-4">
+      {/* Header summary */}
+      <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-500" />
+          <div>
+            <p className="text-sm font-semibold text-foreground">Data Health Check</p>
+            <p className="text-xs text-muted-foreground">
+              {issues.length} issue{issues.length === 1 ? "" : "s"} detected — review and fix manually in Excel.
+            </p>
           </div>
-          {onDataFixed && (
-            <div className="px-4 py-3 border-t border-border bg-muted/20">
-              <Button size="sm" variant="outline" className="w-full" onClick={handleFixData}>
-                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                Fix My Data
-              </Button>
-            </div>
-          )}
         </div>
-      )}
+        <div className="flex items-center gap-2">
+          {highCount > 0 && <Badge variant="outline" className="border-red-500/40 text-red-600 dark:text-red-400">🔴 {highCount} High</Badge>}
+          {medCount > 0 && <Badge variant="outline" className="border-amber-500/40 text-amber-600 dark:text-amber-400">🟡 {medCount} Medium</Badge>}
+          {lowCount > 0 && <Badge variant="outline" className="border-green-500/40 text-green-600 dark:text-green-400">🟢 {lowCount} Low</Badge>}
+        </div>
+      </div>
+
+      {/* Issue cards */}
+      <div className="grid gap-3 md:grid-cols-2">
+        {issues.map((issue, i) => {
+          const sev = severityConfig[issue.severity];
+          const isOpen = expandedIdx === i;
+          return (
+            <div key={i} className={`rounded-lg border border-border bg-card overflow-hidden ${sev.className}`}>
+              <button
+                onClick={() => setExpandedIdx(isOpen ? null : i)}
+                className="w-full text-left px-4 py-3 hover:bg-muted/30 transition-colors"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm">{sev.icon}</span>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{sev.label}</span>
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">{issue.title}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{issue.message}</p>
+                  </div>
+                  <span className="text-xs text-muted-foreground mt-1">{isOpen ? "▾" : "▸"}</span>
+                </div>
+              </button>
+              {isOpen && (
+                <div className="border-t border-border bg-background/50 px-4 py-3">
+                  <p className="text-xs font-semibold text-foreground flex items-center gap-1.5 mb-2">
+                    <Wrench className="h-3.5 w-3.5 text-primary" />
+                    How to fix in Excel
+                  </p>
+                  <ol className="list-decimal list-inside space-y-1 text-xs text-muted-foreground leading-relaxed">
+                    {issue.excelFix.map((step, j) => (
+                      <li key={j}>{step}</li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

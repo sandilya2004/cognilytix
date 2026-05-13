@@ -30,9 +30,22 @@ Deno.serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Check if user exists
-    const { data: existing } = await admin.auth.admin.listUsers();
-    const found = existing?.users?.find((u) => u.email === email);
+    // List existing users (paginated; first page is enough for admin domain)
+    const { data: existing } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    const adminUsers = (existing?.users ?? []).filter((u) =>
+      (u.email ?? "").endsWith(`@${ADMIN_DOMAIN}`)
+    );
+
+    // Delete any admin user that isn't the new one
+    const removed: string[] = [];
+    for (const u of adminUsers) {
+      if (u.email !== email) {
+        await admin.auth.admin.deleteUser(u.id);
+        removed.push(u.email ?? u.id);
+      }
+    }
+
+    const found = adminUsers.find((u) => u.email === email);
 
     if (found) {
       // Update password + ensure admin role
@@ -45,7 +58,7 @@ Deno.serve(async (req) => {
         { user_id: found.id, role: "admin" },
         { onConflict: "user_id,role" },
       );
-      return new Response(JSON.stringify({ ok: true, status: "updated", email, login_id: userId, user_id: found.id }), {
+      return new Response(JSON.stringify({ ok: true, status: "updated", email, login_id: userId, user_id: found.id, removed }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -59,7 +72,7 @@ Deno.serve(async (req) => {
 
     if (error) throw error;
 
-    return new Response(JSON.stringify({ ok: true, status: "created", email, login_id: userId, user_id: data.user?.id }), {
+    return new Response(JSON.stringify({ ok: true, status: "created", email, login_id: userId, user_id: data.user?.id, removed }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
