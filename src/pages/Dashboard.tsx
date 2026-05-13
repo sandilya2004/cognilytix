@@ -478,8 +478,8 @@ export default function Dashboard() {
 
         {/* HEALTH CHECK TAB */}
         {activeTab === "health" && data && (
-          <div className="max-w-4xl mx-auto p-6">
-            <DataHealthCheck data={data} onDataFixed={handleDataChange} />
+          <div className="max-w-5xl mx-auto p-6">
+            <DataHealthCheck data={data} />
           </div>
         )}
 
