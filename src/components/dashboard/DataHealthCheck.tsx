@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { AlertTriangle, CheckCircle2, Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { ParsedData } from "@/lib/data-processing";
@@ -201,7 +201,6 @@ const severityConfig = {
 
 export default function DataHealthCheck({ data }: DataHealthCheckProps) {
   const issues = useMemo(() => analyzeHealth(data), [data]);
-  const [expandedIdx, setExpandedIdx] = useState<number | null>(0);
 
   if (issues.length === 0) {
     return (
@@ -245,38 +244,27 @@ export default function DataHealthCheck({ data }: DataHealthCheckProps) {
       <div className="grid gap-3 md:grid-cols-2">
         {issues.map((issue, i) => {
           const sev = severityConfig[issue.severity];
-          const isOpen = expandedIdx === i;
           return (
             <div key={i} className={`rounded-lg border border-border bg-card overflow-hidden ${sev.className}`}>
-              <button
-                onClick={() => setExpandedIdx(isOpen ? null : i)}
-                className="w-full text-left px-4 py-3 hover:bg-muted/30 transition-colors"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm">{sev.icon}</span>
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{sev.label}</span>
-                    </div>
-                    <p className="text-sm font-semibold text-foreground">{issue.title}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{issue.message}</p>
-                  </div>
-                  <span className="text-xs text-muted-foreground mt-1">{isOpen ? "▾" : "▸"}</span>
+              <div className="px-4 py-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm">{sev.icon}</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{sev.label}</span>
                 </div>
-              </button>
-              {isOpen && (
-                <div className="border-t border-border bg-background/50 px-4 py-3">
-                  <p className="text-xs font-semibold text-foreground flex items-center gap-1.5 mb-2">
-                    <Wrench className="h-3.5 w-3.5 text-primary" />
-                    How to fix in Excel
-                  </p>
-                  <ol className="list-decimal list-inside space-y-1 text-xs text-muted-foreground leading-relaxed">
-                    {issue.excelFix.map((step, j) => (
-                      <li key={j}>{step}</li>
-                    ))}
-                  </ol>
-                </div>
-              )}
+                <p className="text-sm font-semibold text-foreground">{issue.title}</p>
+                <p className="text-xs text-muted-foreground mt-1">{issue.message}</p>
+              </div>
+              <div className="border-t border-border bg-background/50 px-4 py-3">
+                <p className="text-xs font-semibold text-foreground flex items-center gap-1.5 mb-2">
+                  <Wrench className="h-3.5 w-3.5 text-primary" />
+                  How to fix in Excel
+                </p>
+                <ol className="list-decimal list-inside space-y-1 text-xs text-muted-foreground leading-relaxed">
+                  {issue.excelFix.map((step, j) => (
+                    <li key={j}>{step}</li>
+                  ))}
+                </ol>
+              </div>
             </div>
           );
         })}
