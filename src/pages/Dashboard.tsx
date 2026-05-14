@@ -523,6 +523,20 @@ export default function Dashboard() {
               <ChatPanel messages={chatMessages} isLoading={isProcessing} />
             </div>
 
+            {/* Auto Dashboard CTA */}
+            <div className="max-w-4xl mx-auto rounded-lg border border-primary/30 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-blue-500/10 p-4 flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Wand2 className="h-4 w-4 text-primary" />
+                  Generate a full executive dashboard automatically
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">KPIs, trend lines, comparisons & filters — built from your data in one click.</p>
+              </div>
+              <Button variant="hero" size="sm" onClick={() => setActiveTab("auto")}>
+                <Wand2 className="h-4 w-4 mr-1" /> Create Visualization Dashboard
+              </Button>
+            </div>
+
             {/* Visual Picker */}
             <VisualPicker onSelect={handleVisualPick} />
 
@@ -610,6 +624,13 @@ export default function Dashboard() {
             </div>
           </div>
         )}
+        {/* AUTO DASHBOARD TAB */}
+        {activeTab === "auto" && data && (
+          <div className="max-w-7xl mx-auto p-6">
+            <AutoDashboard data={data} />
+          </div>
+        )}
+
         {/* STORY TAB */}
         {activeTab === "story" && data && (
           <StoryDashboard data={data} charts={charts} summaryText={summaryText} />
