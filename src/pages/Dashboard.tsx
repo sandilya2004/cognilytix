@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Brain, FileDown, FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard, BookOpen, TrendingUp, Moon, Sun, Sparkles, LogOut } from "lucide-react";
+import { Brain, FileDown, FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard, BookOpen, TrendingUp, Moon, Sun, Sparkles, LogOut, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import FileUpload from "@/components/dashboard/FileUpload";
@@ -12,6 +12,7 @@ import SummaryPanel from "@/components/dashboard/SummaryPanel";
 import InsightsPanel from "@/components/dashboard/InsightsPanel";
 import DataPanel from "@/components/dashboard/DataPanel";
 import DataHealthCheck from "@/components/dashboard/DataHealthCheck";
+import AutoDashboard from "@/components/dashboard/AutoDashboard";
 import SheetSelectorDialog from "@/components/dashboard/SheetSelectorDialog";
 import AxisBuilder from "@/components/dashboard/AxisBuilder";
 import StoryDashboard from "@/components/dashboard/StoryDashboard";
@@ -40,7 +41,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 
-type Tab = "upload" | "preview" | "health" | "insights" | "dashboard" | "story" | "prediction" | "prediction-insights";
+type Tab = "upload" | "preview" | "health" | "insights" | "dashboard" | "auto" | "story" | "prediction" | "prediction-insights";
 
 const tabs: { id: Tab; label: string; icon: React.ElementType; needsData: boolean }[] = [
   { id: "upload", label: "Upload", icon: Upload, needsData: false },
@@ -48,6 +49,7 @@ const tabs: { id: Tab; label: string; icon: React.ElementType; needsData: boolea
   { id: "health", label: "Health Check", icon: HeartPulse, needsData: true },
   { id: "insights", label: "Insights", icon: Lightbulb, needsData: true },
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, needsData: true },
+  { id: "auto", label: "Auto Dashboard", icon: Wand2, needsData: true },
   { id: "story", label: "Story", icon: BookOpen, needsData: true },
   { id: "prediction", label: "Prediction", icon: TrendingUp, needsData: true },
   { id: "prediction-insights", label: "Prediction Insights", icon: Sparkles, needsData: true },
