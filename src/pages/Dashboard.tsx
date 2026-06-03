@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Brain, FileDown, FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard, BookOpen, TrendingUp, Moon, Sun, Sparkles, LogOut, Wand2, FileText, Home } from "lucide-react";
+import { Brain, FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard, BookOpen, TrendingUp, Moon, Sun, Sparkles, LogOut, Wand2, FileText, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import ReportActions from "@/components/dashboard/ReportActions";
@@ -84,7 +84,6 @@ export default function Dashboard() {
     }
     return false;
   });
-  const [pdfProgress, setPdfProgress] = useState<string | null>(null);
   const [pendingChartType, setPendingChartType] = useState<ChartType | null>(null);
 
   // Dark mode effect
