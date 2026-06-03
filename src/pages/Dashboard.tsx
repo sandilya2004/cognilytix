@@ -1,8 +1,9 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Brain, FileDown, FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard, BookOpen, TrendingUp, Moon, Sun, Sparkles, LogOut, Wand2 } from "lucide-react";
+import { Brain, FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard, BookOpen, TrendingUp, Moon, Sun, Sparkles, LogOut, Wand2, FileText, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import ReportActions from "@/components/dashboard/ReportActions";
 import FileUpload from "@/components/dashboard/FileUpload";
 import PromptBar from "@/components/dashboard/PromptBar";
 import ChatPanel, { type ChatMessage } from "@/components/dashboard/ChatPanel";
@@ -83,7 +84,6 @@ export default function Dashboard() {
     }
     return false;
   });
-  const [pdfProgress, setPdfProgress] = useState<string | null>(null);
   const [pendingChartType, setPendingChartType] = useState<ChartType | null>(null);
 
   // Dark mode effect
@@ -303,72 +303,6 @@ export default function Dashboard() {
     );
   }, [data, slicerFilters]);
 
-  const exportDashboardPDF = async () => {
-    const chartEls = document.querySelectorAll("#chart-grid > div");
-    const summaryEl = document.querySelector("#summary-panel");
-    if (chartEls.length === 0 && !summaryEl) return;
-    setPdfProgress("Preparing export…");
-    try {
-      const { default: html2canvas } = await import("html2canvas");
-      const { default: jsPDF } = await import("jspdf");
-      const pdf = new jsPDF({ orientation: "landscape" });
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-      const margin = 10;
-      const gap = 6;
-      const cols = 2;
-      const rows = 2;
-      const cellW = (pageW - margin * 2 - gap * (cols - 1)) / cols;
-      const cellH = (pageH - margin * 2 - gap * (rows - 1)) / rows;
-      const perPage = cols * rows;
-
-      // Parallel canvas rendering
-      const total = chartEls.length;
-      setPdfProgress(`Rendering ${total} charts…`);
-      const canvasPromises = Array.from(chartEls).map((el) => {
-        const htmlEl = el as HTMLElement;
-        const origPadding = htmlEl.style.padding;
-        htmlEl.style.padding = "12px";
-        const p = html2canvas(htmlEl, { backgroundColor: "#ffffff", scale: 4, useCORS: true, logging: false, width: htmlEl.scrollWidth + 24, height: htmlEl.scrollHeight + 24 })
-          .then(canvas => {
-            htmlEl.style.padding = origPadding;
-            return canvas.toDataURL("image/png", 1.0);
-          });
-        return p;
-      });
-      const images = await Promise.all(canvasPromises);
-
-      for (let i = 0; i < images.length; i++) {
-        const posInPage = i % perPage;
-        if (i > 0 && posInPage === 0) pdf.addPage();
-        const col = posInPage % cols;
-        const row = Math.floor(posInPage / cols);
-        pdf.addImage(images[i], "PNG", margin + col * (cellW + gap), margin + row * (cellH + gap), cellW, cellH);
-      }
-
-      if (summaryEl) {
-        setPdfProgress("Rendering summary…");
-        pdf.addPage();
-        const summaryCanvas = await html2canvas(summaryEl as HTMLElement, { backgroundColor: "#ffffff", scale: 4, useCORS: true, logging: false, width: (summaryEl as HTMLElement).scrollWidth + 20 });
-        const imgData = summaryCanvas.toDataURL("image/png", 1.0);
-        const imgRatio = summaryCanvas.width / summaryCanvas.height;
-        const usableW = pageW - margin * 2;
-        const usableH = pageH - margin * 2;
-        let w = usableW;
-        let h = w / imgRatio;
-        if (h > usableH) { h = usableH; w = h * imgRatio; }
-        pdf.addImage(imgData, "PNG", margin + (usableW - w) / 2, margin, w, h);
-      }
-
-      pdf.save("cognilytix_dashboard.pdf");
-      toast.success("PDF exported!");
-    } catch {
-      toast.error("PDF export failed.");
-    } finally {
-      setPdfProgress(null);
-    }
-  };
-
   const handleSaveProject = () => {
     if (!data) { toast.error("Upload data first."); return; }
     const projectId = searchParams.get("project") || crypto.randomUUID();
@@ -416,13 +350,23 @@ export default function Dashboard() {
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDarkMode(!darkMode)} title="Toggle dark mode">
               {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/")} title="Home">
+              <Home className="h-4 w-4 mr-1" /> Home
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => navigate("/projects")}>
               <FolderOpen className="h-4 w-4 mr-1" /> Projects
             </Button>
-            {charts.length > 0 && (
-              <Button variant="outline" size="sm" onClick={exportDashboardPDF} disabled={!!pdfProgress}>
-                <FileDown className="h-4 w-4 mr-1" /> {pdfProgress || "Export PDF"}
-              </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/reports")}>
+              <FileText className="h-4 w-4 mr-1" /> Reports
+            </Button>
+            {data && (
+              <ReportActions
+                title={fileName.replace(/\.[^/.]+$/, "") || "Cognilytix Report"}
+                fileName={fileName}
+                data={data}
+                charts={charts}
+                summaryText={summaryText}
+              />
             )}
             <Button variant="ghost" size="sm" onClick={async () => { await signOut(); navigate("/auth"); }} title={user?.email ?? "Sign out"}>
               <LogOut className="h-4 w-4 mr-1" /> Sign out
