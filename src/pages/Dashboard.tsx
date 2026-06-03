@@ -1,8 +1,9 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Brain, FileDown, FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard, BookOpen, TrendingUp, Moon, Sun, Sparkles, LogOut, Wand2 } from "lucide-react";
+import { Brain, FileDown, FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard, BookOpen, TrendingUp, Moon, Sun, Sparkles, LogOut, Wand2, FileText, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import ReportActions from "@/components/dashboard/ReportActions";
 import FileUpload from "@/components/dashboard/FileUpload";
 import PromptBar from "@/components/dashboard/PromptBar";
 import ChatPanel, { type ChatMessage } from "@/components/dashboard/ChatPanel";
@@ -416,13 +417,23 @@ export default function Dashboard() {
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDarkMode(!darkMode)} title="Toggle dark mode">
               {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/")} title="Home">
+              <Home className="h-4 w-4 mr-1" /> Home
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => navigate("/projects")}>
               <FolderOpen className="h-4 w-4 mr-1" /> Projects
             </Button>
-            {charts.length > 0 && (
-              <Button variant="outline" size="sm" onClick={exportDashboardPDF} disabled={!!pdfProgress}>
-                <FileDown className="h-4 w-4 mr-1" /> {pdfProgress || "Export PDF"}
-              </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/reports")}>
+              <FileText className="h-4 w-4 mr-1" /> Reports
+            </Button>
+            {data && (
+              <ReportActions
+                title={fileName.replace(/\.[^/.]+$/, "") || "Cognilytix Report"}
+                fileName={fileName}
+                data={data}
+                charts={charts}
+                summaryText={summaryText}
+              />
             )}
             <Button variant="ghost" size="sm" onClick={async () => { await signOut(); navigate("/auth"); }} title={user?.email ?? "Sign out"}>
               <LogOut className="h-4 w-4 mr-1" /> Sign out
