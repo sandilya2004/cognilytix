@@ -80,6 +80,42 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_reports: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          owner_id: string
+          password_hash: string | null
+          permission: string
+          snapshot: Json
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          owner_id: string
+          password_hash?: string | null
+          permission?: string
+          snapshot: Json
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          owner_id?: string
+          password_hash?: string | null
+          permission?: string
+          snapshot?: Json
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
