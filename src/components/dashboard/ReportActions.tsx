@@ -165,11 +165,11 @@ export default function ReportActions(props: Props) {
         .insert([{
           owner_id: userRes.user.id,
           title: props.title || "Cognilytix Report",
-          snapshot,
+          snapshot: snapshot as unknown as Record<string, unknown>,
           permission,
           password_hash: passwordHash,
           expires_at,
-        }])
+        }] as never)
         .select("id")
         .single();
 
