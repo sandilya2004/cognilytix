@@ -9,6 +9,8 @@ import Projects from "./pages/Projects";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import AdminDashboard from "./pages/AdminDashboard";
+import Reports from "./pages/Reports";
+import SharedReport from "./pages/SharedReport";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
@@ -23,14 +25,8 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute requireRole="user">
-                  <LandingPage />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/report/:id" element={<SharedReport />} />
             <Route
               path="/dashboard"
               element={
@@ -44,6 +40,14 @@ const App = () => (
               element={
                 <ProtectedRoute requireRole="user">
                   <Projects />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute requireRole="user">
+                  <Reports />
                 </ProtectedRoute>
               }
             />
