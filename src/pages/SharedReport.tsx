@@ -121,6 +121,7 @@ export default function SharedReport() {
   const parsed: ParsedData = {
     columns: row.snapshot.columns,
     rows: row.snapshot.rows,
+    rawHeaders: row.snapshot.columns.map((c) => c.name),
   };
 
   return (
