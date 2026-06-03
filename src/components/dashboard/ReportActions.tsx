@@ -162,14 +162,14 @@ export default function ReportActions(props: Props) {
 
       const { data: inserted, error } = await supabase
         .from("shared_reports")
-        .insert({
+        .insert([{
           owner_id: userRes.user.id,
           title: props.title || "Cognilytix Report",
           snapshot,
           permission,
           password_hash: passwordHash,
           expires_at,
-        })
+        }])
         .select("id")
         .single();
 
