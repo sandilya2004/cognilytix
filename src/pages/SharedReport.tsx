@@ -100,7 +100,7 @@ export default function SharedReport() {
     );
   }
 
-  if (needsPassword && !unlocked && row) {
+  if (needsPassword && !unlocked) {
     return (
       <div className="flex min-h-screen items-center justify-center p-6">
         <Card className="max-w-md w-full">
@@ -108,7 +108,7 @@ export default function SharedReport() {
             <div className="text-center">
               <Lock className="h-8 w-8 text-primary mx-auto mb-2" />
               <p className="text-lg font-semibold">Password required</p>
-              <p className="text-sm text-muted-foreground">{row.title}</p>
+              <p className="text-sm text-muted-foreground">{lockedTitle}</p>
             </div>
             <Input
               type="password"
