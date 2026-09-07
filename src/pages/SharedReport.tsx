@@ -20,50 +20,59 @@ interface Row {
   id: string;
   title: string;
   permission: string;
-  password_hash: string | null;
-  expires_at: string | null;
   snapshot: Snapshot;
-}
-
-async function hash(s: string) {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 export default function SharedReport() {
   const { id } = useParams<{ id: string }>();
   const [row, setRow] = useState<Row | null>(null);
+  const [lockedTitle, setLockedTitle] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [needsPassword, setNeedsPassword] = useState(false);
   const [password, setPassword] = useState("");
   const [unlocked, setUnlocked] = useState(false);
 
+  const fetchReport = async (pwd?: string) => {
+    const { data, error } = await supabase.functions.invoke("get-shared-report", {
+      body: { id, password: pwd ?? "" },
+    });
+    if (error) {
+      // Wrong password or unavailable report — keep messaging generic.
+      return { ok: false as const };
+    }
+    return { ok: true as const, data: data as {
+      requiresPassword?: boolean;
+      title?: string;
+      report?: Row;
+    } };
+  };
+
   useEffect(() => {
     if (!id) return;
     (async () => {
-      const { data, error } = await supabase
-        .from("shared_reports")
-        .select("id,title,permission,password_hash,expires_at,snapshot")
-        .eq("id", id)
-        .maybeSingle();
-      if (error || !data) {
+      const res = await fetchReport();
+      if (!res.ok || (!res.data.report && !res.data.requiresPassword)) {
         setError("This report no longer exists or has expired.");
-      } else {
-        setRow(data as unknown as Row);
-        if (data.password_hash) setNeedsPassword(true);
-        else setUnlocked(true);
+      } else if (res.data.requiresPassword) {
+        setLockedTitle(res.data.title ?? "Shared report");
+        setNeedsPassword(true);
+      } else if (res.data.report) {
+        setRow(res.data.report);
+        setUnlocked(true);
       }
       setLoading(false);
     })();
   }, [id]);
 
   const tryUnlock = async () => {
-    if (!row?.password_hash) return;
-    const h = await hash(password);
-    if (h === row.password_hash) {
+    if (!password) return;
+    const res = await fetchReport(password);
+    if (res.ok && res.data.report) {
+      setRow(res.data.report);
       setUnlocked(true);
       setNeedsPassword(false);
+      setError(null);
     } else {
       setError("Incorrect password");
     }
@@ -77,7 +86,7 @@ export default function SharedReport() {
     );
   }
 
-  if (error && !row) {
+  if (error && !row && !needsPassword) {
     return (
       <div className="flex min-h-screen items-center justify-center p-6">
         <Card className="max-w-md w-full">
@@ -91,7 +100,7 @@ export default function SharedReport() {
     );
   }
 
-  if (needsPassword && !unlocked && row) {
+  if (needsPassword && !unlocked) {
     return (
       <div className="flex min-h-screen items-center justify-center p-6">
         <Card className="max-w-md w-full">
@@ -99,7 +108,7 @@ export default function SharedReport() {
             <div className="text-center">
               <Lock className="h-8 w-8 text-primary mx-auto mb-2" />
               <p className="text-lg font-semibold">Password required</p>
-              <p className="text-sm text-muted-foreground">{row.title}</p>
+              <p className="text-sm text-muted-foreground">{lockedTitle}</p>
             </div>
             <Input
               type="password"
