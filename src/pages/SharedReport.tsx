@@ -86,7 +86,7 @@ export default function SharedReport() {
     );
   }
 
-  if (error && !row) {
+  if (error && !row && !needsPassword) {
     return (
       <div className="flex min-h-screen items-center justify-center p-6">
         <Card className="max-w-md w-full">
