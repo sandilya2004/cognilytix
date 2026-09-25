@@ -9,7 +9,18 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, context } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const context = body?.context;
+    const messages = Array.isArray(body?.messages)
+      ? body.messages
+      : typeof body?.prompt === "string" && body.prompt.trim()
+        ? [{ role: "user", content: body.prompt }]
+        : null;
+    if (!messages) {
+      return new Response(JSON.stringify({ error: "Please provide a message." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
