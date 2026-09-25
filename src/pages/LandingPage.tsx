@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import heroImage from "@/assets/hero-dashboard.png";
 import { useAuth } from "@/hooks/useAuth";
+import UserCountCard from "@/components/UserCountCard";
 
 const features = [
   { icon: BarChart3, title: "Dashboard Generation", description: "Auto-build executive dashboards from any CSV or Excel — KPIs, trends, comparisons in one click." },
@@ -196,7 +197,8 @@ export default function LandingPage() {
       <section className="border-t border-border py-20">
         <div className="container max-w-3xl text-center">
           <h2 className="text-3xl font-bold text-foreground">Trusted by teams that move fast</h2>
-          <p className="mt-4 text-muted-foreground">Customer stories coming soon. Want to be featured? Get in touch.</p>
+          <div className="mt-8"><UserCountCard /></div>
+          <p className="mt-8 text-muted-foreground">Customer stories coming soon. Want to be featured? Get in touch.</p>
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
             {[1, 2, 3].map((i) => (
               <div key={i} className="rounded-lg border border-dashed border-border bg-card/50 p-6 text-left">
