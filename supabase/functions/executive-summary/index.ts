@@ -33,7 +33,7 @@ ${(insights ?? []).slice(0, 10).map((s: string) => "- " + s).join("\n")}
 
 Respond as valid JSON only, with this shape:
 {
-  "executiveSummary": "1 short paragraph (3-5 sentences) capturing the overall business story.",
+  "executiveSummary": "2-3 full paragraphs (8-12 sentences total) separated by \\n\\n, telling the overall business story with concrete numbers.",
   "keyFindings": ["...", "..."],
   "growthOpportunities": ["...", "..."],
   "riskAreas": ["...", "..."],

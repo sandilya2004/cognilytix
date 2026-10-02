@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { getProjects, saveProjects, type Project } from "@/pages/Projects";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
+import { clearReportStore } from "@/lib/report-store";
 import {
   DndContext,
   closestCenter,
@@ -132,6 +133,7 @@ export default function Dashboard() {
   }, []);
 
   const handleReset = useCallback(() => {
+    clearReportStore();
     setData(null);
     setFileName("");
     setCharts([]);
@@ -459,8 +461,8 @@ export default function Dashboard() {
         )}
 
         {/* DASHBOARD TAB */}
-        {activeTab === "dashboard" && data && (
-          <div className="p-4 space-y-4">
+        {data && (
+          <div data-tab-panel className={activeTab === "dashboard" ? "p-4 space-y-4" : "hidden p-4 space-y-4"}>
             {/* Prompt bar */}
             <div className="max-w-4xl mx-auto">
               <PromptBar onSubmit={handlePrompt} isLoading={isProcessing} disabled={!data} />
@@ -575,19 +577,21 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* STORY TAB */}
-        {activeTab === "story" && data && (
-          <StoryDashboard data={data} charts={charts} summaryText={summaryText} />
+        {/* STORY / PREDICTION TABS — kept mounted so results persist across tab switches */}
+        {data && (
+          <div data-tab-panel className={activeTab === "story" ? "" : "hidden"}>
+            <StoryDashboard data={data} charts={charts} summaryText={summaryText} />
+          </div>
         )}
-
-        {/* PREDICTION TAB */}
-        {activeTab === "prediction" && data && (
-          <PredictionPanel data={data} />
+        {data && (
+          <div data-tab-panel id="prediction-panel-root" className={activeTab === "prediction" ? "" : "hidden"}>
+            <PredictionPanel data={data} />
+          </div>
         )}
-
-        {/* PREDICTION INSIGHTS TAB */}
-        {activeTab === "prediction-insights" && data && (
-          <PredictionInsightsPanel data={data} />
+        {data && (
+          <div data-tab-panel className={activeTab === "prediction-insights" ? "" : "hidden"}>
+            <PredictionInsightsPanel data={data} />
+          </div>
         )}
       </main>
 

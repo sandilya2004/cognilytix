@@ -16,6 +16,7 @@ import type { ParsedData } from "@/lib/data-processing";
 import { downloadExecutivePDF, type ReportPayload } from "@/lib/export-pdf";
 import { downloadExecutivePPTX } from "@/lib/export-pptx";
 import { generateSummary } from "@/lib/summarize";
+import { reportStore, withPanelsVisible } from "@/lib/report-store";
 
 interface Props {
   title: string;
@@ -51,15 +52,58 @@ async function fetchExecutiveSummary(payload: ReportPayload): Promise<AISummary>
 
 function buildBasePayload(props: Props): ReportPayload {
   const insights = props.data && props.charts.length
-    ? generateSummary(props.charts, props.data).split(/\n+/).filter(Boolean).slice(0, 12)
+    ? generateSummary(props.charts, props.data).split(/\n+/).map(stripMd).filter(Boolean).slice(0, 12)
     : [];
+  const pi = reportStore.predictionInsights;
   return {
     title: props.title || "Cognilytix Report",
     fileName: props.fileName,
     data: props.data,
     charts: props.charts,
     insights,
+    story: reportStore.story ? stripMd(reportStore.story) : undefined,
+    predictions: reportStore.predictions ?? [],
+    predictionAI: reportStore.predictionAI ? stripMd(reportStore.predictionAI) : undefined,
+    predictionInsights: pi ? [...pi.trends, ...pi.growth.map((s) => `Opportunity: ${s}`)] : [],
+    problems: pi ? [...pi.risks] : [],
+    recommendations: pi ? [...pi.actions] : [],
   };
+}
+
+function stripMd(s: string): string {
+  return s.replace(/\*\*|__|`/g, "").replace(/^#+\s*/gm, "").replace(/^\s*[-*]\s+/gm, "• ").trim();
+}
+
+function localSummary(p: ReportPayload): string {
+  const d = p.data;
+  if (!d) return "";
+  const num = d.columns.filter((c) => c.type === "number").map((c) => c.name);
+  const cat = d.columns.filter((c) => c.type === "string").map((c) => c.name);
+  const parts = [
+    `This report analyses ${d.rows.length.toLocaleString()} records from ${p.fileName || "the uploaded dataset"} across ${d.columns.length} fields, including ${num.length} numeric measures${num.length ? ` (${num.slice(0, 4).join(", ")})` : ""} and ${cat.length} categories${cat.length ? ` (${cat.slice(0, 4).join(", ")})` : ""}.`,
+  ];
+  if (p.insights?.length) parts.push(`Key observations: ${p.insights.slice(0, 3).join(" ")}`);
+  if (p.predictions?.length) parts.push(`Looking ahead, ${p.predictions.slice(0, 2).join(" ")}`);
+  return parts.join("\n\n");
+}
+
+/** Builds the complete payload: AI summary + every tab's generated content. */
+async function buildFullPayload(props: Props): Promise<ReportPayload> {
+  const base = buildBasePayload(props);
+  try {
+    const ai = await fetchExecutiveSummary(base);
+    return {
+      ...base,
+      executiveSummary: ai.executiveSummary || localSummary(base),
+      insights: [...(ai.keyFindings ?? []), ...(base.insights ?? [])].slice(0, 14),
+      opportunities: ai.growthOpportunities ?? [],
+      problems: [...(ai.riskAreas ?? []), ...(base.problems ?? [])],
+      recommendations: [...(ai.recommendations ?? []), ...(base.recommendations ?? [])],
+      predictionInsights: [...(ai.predictionInsights ?? []), ...(base.predictionInsights ?? [])],
+    };
+  } catch {
+    return { ...base, executiveSummary: localSummary(base) };
+  }
 }
 
 export default function ReportActions(props: Props) {
@@ -75,62 +119,28 @@ export default function ReportActions(props: Props) {
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [creatingShare, setCreatingShare] = useState(false);
 
-  const exportPDF = async () => {
+  const run = async (kind: "pdf" | "ppt" | "both", setL: (v: boolean) => void) => {
     if (!props.data) { toast.error("Upload data first."); return; }
-    setLoadingPdf(true);
+    setL(true);
+    const t = toast.loading("Building your report with charts, insights & predictions…");
     try {
-      await downloadExecutivePDF(buildBasePayload(props));
-      toast.success("PDF downloaded");
-    } catch (e) {
-      toast.error("PDF export failed");
-    } finally {
-      setLoadingPdf(false);
-    }
-  };
-
-  const exportPPT = async () => {
-    if (!props.data) { toast.error("Upload data first."); return; }
-    setLoadingPpt(true);
-    try {
-      await downloadExecutivePPTX(buildBasePayload(props));
-      toast.success("PowerPoint downloaded");
-    } catch (e) {
-      toast.error("PowerPoint export failed");
-    } finally {
-      setLoadingPpt(false);
-    }
-  };
-
-  const generateExecutiveReport = async () => {
-    if (!props.data) { toast.error("Upload data first."); return; }
-    setLoadingExec(true);
-    const t = toast.loading("Generating board-ready report…");
-    try {
-      const base = buildBasePayload(props);
-      const ai = await fetchExecutiveSummary(base);
-      const enriched: ReportPayload = {
-        ...base,
-        executiveSummary: ai.executiveSummary,
-        insights: [
-          ...(ai.keyFindings ?? []),
-          ...(ai.growthOpportunities ?? []).map((s) => `Opportunity: ${s}`),
-          ...(ai.riskAreas ?? []).map((s) => `Risk: ${s}`),
-        ],
-        predictions: ai.predictionInsights ?? [],
-        recommendations: ai.recommendations ?? [],
-      };
-      toast.dismiss(t);
-      toast.loading("Building PDF + PowerPoint…", { id: t });
-      await downloadExecutivePDF(enriched);
-      await downloadExecutivePPTX(enriched);
-      toast.success("Executive report ready (PDF + PPT downloaded)", { id: t });
+      const payload = await buildFullPayload(props);
+      await withPanelsVisible(async () => {
+        if (kind !== "ppt") await downloadExecutivePDF(payload);
+        if (kind !== "pdf") await downloadExecutivePPTX(payload);
+      });
+      toast.success(kind === "both" ? "Executive report ready (PDF + PPT)" : kind === "pdf" ? "PDF downloaded" : "PowerPoint downloaded", { id: t });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unknown error";
-      toast.error(`Could not generate report: ${msg}`, { id: t });
+      toast.error(`Export failed: ${msg}`, { id: t });
     } finally {
-      setLoadingExec(false);
+      setL(false);
     }
   };
+
+  const exportPDF = () => run("pdf", setLoadingPdf);
+  const exportPPT = () => run("ppt", setLoadingPpt);
+  const generateExecutiveReport = () => run("both", setLoadingExec);
 
   const createShareLink = async () => {
     if (!props.data) { toast.error("Upload data first."); return; }

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { setReportStore } from "@/lib/report-store";
 import { TrendingUp, TrendingDown, Lightbulb, Sparkles, RefreshCw, Brain, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -120,12 +121,15 @@ export default function PredictionInsightsPanel({ data }: PredictionInsightsPane
       });
       if (error) throw error;
       if (resp?.insights) {
-        setInsights({
+        const next = {
           growth: resp.insights.growth || [],
           risks: resp.insights.risks || [],
           actions: resp.insights.actions || [],
           trends: resp.insights.trends || [],
-        });
+        };
+        setInsights(next);
+        const flat = (a: InsightItem[]) => a.map((i) => `${i.title}: ${i.detail}`);
+        setReportStore({ predictionInsights: { growth: flat(next.growth), risks: flat(next.risks), actions: flat(next.actions), trends: flat(next.trends) } });
         toast.success("Prediction insights ready!");
       }
     } catch (e) {
