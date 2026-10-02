@@ -459,8 +459,8 @@ export default function Dashboard() {
         )}
 
         {/* DASHBOARD TAB */}
-        {activeTab === "dashboard" && data && (
-          <div className="p-4 space-y-4">
+        {data && (
+          <div data-tab-panel className={activeTab === "dashboard" ? "p-4 space-y-4" : "hidden p-4 space-y-4"}>
             {/* Prompt bar */}
             <div className="max-w-4xl mx-auto">
               <PromptBar onSubmit={handlePrompt} isLoading={isProcessing} disabled={!data} />
