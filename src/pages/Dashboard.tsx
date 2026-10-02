@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { getProjects, saveProjects, type Project } from "@/pages/Projects";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
+import { clearReportStore } from "@/lib/report-store";
 import {
   DndContext,
   closestCenter,
@@ -132,6 +133,7 @@ export default function Dashboard() {
   }, []);
 
   const handleReset = useCallback(() => {
+    clearReportStore();
     setData(null);
     setFileName("");
     setCharts([]);
