@@ -584,7 +584,7 @@ export default function Dashboard() {
           </div>
         )}
         {data && (
-          <div data-tab-panel className={activeTab === "prediction" ? "" : "hidden"}>
+          <div data-tab-panel id="prediction-panel-root" className={activeTab === "prediction" ? "" : "hidden"}>
             <PredictionPanel data={data} />
           </div>
         )}
