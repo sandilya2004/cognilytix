@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { setReportStore } from "@/lib/report-store";
 import { TrendingUp, RefreshCw, Brain, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ParsedData } from "@/lib/data-processing";
@@ -84,6 +85,10 @@ export default function PredictionPanel({ data }: PredictionPanelProps) {
       }
 
       setPredictions(localPredictions);
+      setReportStore({
+        predictions: localPredictions.map(p =>
+          `${p.column}: current avg ${p.currentAvg}, forecast ${p.predictedAvg} (${p.changePercent > 0 ? "+" : ""}${p.changePercent}%). ${p.recommendation}`),
+      });
 
       // Get AI-powered insights
       try {
@@ -102,7 +107,7 @@ Be concise and actionable.`,
             context: "",
           },
         });
-        if (!error && aiData?.response) setAiInsight(aiData.response);
+        if (!error && aiData?.response) { setAiInsight(aiData.response); setReportStore({ predictionAI: aiData.response }); }
       } catch { /* optional */ }
     } finally {
       setLoading(false);
