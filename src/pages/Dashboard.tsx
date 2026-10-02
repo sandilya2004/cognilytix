@@ -575,19 +575,21 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* STORY TAB */}
-        {activeTab === "story" && data && (
-          <StoryDashboard data={data} charts={charts} summaryText={summaryText} />
+        {/* STORY / PREDICTION TABS — kept mounted so results persist across tab switches */}
+        {data && (
+          <div data-tab-panel className={activeTab === "story" ? "" : "hidden"}>
+            <StoryDashboard data={data} charts={charts} summaryText={summaryText} />
+          </div>
         )}
-
-        {/* PREDICTION TAB */}
-        {activeTab === "prediction" && data && (
-          <PredictionPanel data={data} />
+        {data && (
+          <div data-tab-panel className={activeTab === "prediction" ? "" : "hidden"}>
+            <PredictionPanel data={data} />
+          </div>
         )}
-
-        {/* PREDICTION INSIGHTS TAB */}
-        {activeTab === "prediction-insights" && data && (
-          <PredictionInsightsPanel data={data} />
+        {data && (
+          <div data-tab-panel className={activeTab === "prediction-insights" ? "" : "hidden"}>
+            <PredictionInsightsPanel data={data} />
+          </div>
         )}
       </main>
 
