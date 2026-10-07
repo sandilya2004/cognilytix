@@ -48,6 +48,7 @@ function splitParagraph(text: string, maxChars = 680): string[] {
 
 function addTextSection(
   pres: pptxgen,
+  slides: pptxgen.Slide[],
   title: string,
   text: string | undefined,
   pageRef: { value: number },
@@ -55,7 +56,7 @@ function addTextSection(
 ) {
   const chunks = splitParagraph(text || "No content available.");
   chunks.forEach((chunk, index) => {
-    const slide = pres.addSlide();
+    const slide = addSlide(pres, slides);
     slide.background = { color: index % 2 ? WHITE : SOFT };
     addPageTitle(slide, chunks.length > 1 ? `${title} (${index + 1}/${chunks.length})` : title);
     slide.addText(chunk, {
@@ -70,6 +71,7 @@ function addTextSection(
 
 function addListSection(
   pres: pptxgen,
+  slides: pptxgen.Slide[],
   title: string,
   items: string[] | undefined,
   pageRef: { value: number },
@@ -93,7 +95,7 @@ function addListSection(
   if (group.length) groups.push(group);
 
   groups.forEach((itemsInGroup, index) => {
-    const slide = pres.addSlide();
+    const slide = addSlide(pres, slides);
     slide.background = { color: index % 2 ? WHITE : SOFT };
     addPageTitle(slide, groups.length > 1 ? `${title} (${index + 1}/${groups.length})` : title);
     let y = 1.28;
@@ -127,13 +129,20 @@ async function captureChartImages(): Promise<string[]> {
   return images;
 }
 
+function addSlide(pres: pptxgen, slides: pptxgen.Slide[]): pptxgen.Slide {
+  const slide = pres.addSlide();
+  slides.push(slide);
+  return slide;
+}
+
 export async function generateExecutivePPTX(payload: ReportPayload): Promise<Blob> {
   const pres = new pptxgen();
+  const slides: pptxgen.Slide[] = [];
   pres.layout = "LAYOUT_WIDE";
   pres.title = payload.title;
   pres.author = "Cognilytix AI";
 
-  const cover = pres.addSlide();
+  const cover = addSlide(pres, slides);
   cover.background = { color: NAVY_DEEP };
   cover.addShape("rect", { x: 0, y: 3.55, w: 13.33, h: 0.08, fill: { color: ACCENT } });
   cover.addText(cleanText(payload.title), {
@@ -149,9 +158,9 @@ export async function generateExecutivePPTX(payload: ReportPayload): Promise<Blo
   const pageRef = { get value() { return page; }, set value(v: number) { page = v; } };
   const totalRef = { get value() { return total; }, set value(v: number) { total = v; } };
 
-  addTextSection(pres, "Executive Summary", payload.executiveSummary, pageRef, totalRef);
+  addTextSection(pres, slides, "Executive Summary", payload.executiveSummary, pageRef, totalRef);
 
-  const kpiSlide = pres.addSlide();
+  const kpiSlide = addSlide(pres, slides);
   kpiSlide.background = { color: SOFT };
   addPageTitle(kpiSlide, "Key Performance Indicators");
   if (payload.data) {
@@ -181,10 +190,10 @@ export async function generateExecutivePPTX(payload: ReportPayload): Promise<Blo
 
   const chartImages = await captureChartImages();
   if (!chartImages.length) {
-    addTextSection(pres, "Charts & Visualizations", "No charts were available to include in this report.", pageRef, totalRef);
+    addTextSection(pres, slides, "Charts & Visualizations", "No charts were available to include in this report.", pageRef, totalRef);
   } else {
     for (let i = 0; i < chartImages.length; i += 2) {
-      const slide = pres.addSlide();
+      const slide = addSlide(pres, slides);
       slide.background = { color: WHITE };
       addPageTitle(slide, chartImages.length > 2 ? `Charts & Visualizations (${Math.floor(i / 2) + 1})` : "Charts & Visualizations");
       const batch = chartImages.slice(i, i + 2);
@@ -192,25 +201,25 @@ export async function generateExecutivePPTX(payload: ReportPayload): Promise<Blo
         const pos = batch.length === 1
           ? { x: 0.85, y: 1.35, w: 11.65, h: 5.4 }
           : { x: 0.55 + j * 6.25, y: 1.55, w: 6.05, h: 4.95 };
-        slide.addImage({ data, ...pos, sizingContain: true });
+        slide.addImage({ data, x: pos.x, y: pos.y, sizing: { type: "contain", w: pos.w, h: pos.h } });
       });
       page += 1;
       total += 1;
     }
   }
 
-  addListSection(pres, "AI Insights", payload.insights, pageRef, totalRef);
-  addListSection(pres, "Growth Opportunities", payload.opportunities, pageRef, totalRef);
-  addListSection(pres, "Problems & Risk Areas", payload.problems, pageRef, totalRef);
-  addListSection(pres, "Predictions", payload.predictions, pageRef, totalRef);
-  if (payload.predictionAI) addTextSection(pres, "AI Forecast Commentary", payload.predictionAI, pageRef, totalRef);
-  addListSection(pres, "Prediction Insights", payload.predictionInsights, pageRef, totalRef);
-  addListSection(pres, "Recommendations", payload.recommendations, pageRef, totalRef);
-  addTextSection(pres, "Data Story", payload.story, pageRef, totalRef);
+  addListSection(pres, slides, "AI Insights", payload.insights, pageRef, totalRef);
+  addListSection(pres, slides, "Growth Opportunities", payload.opportunities, pageRef, totalRef);
+  addListSection(pres, slides, "Problems & Risk Areas", payload.problems, pageRef, totalRef);
+  addListSection(pres, slides, "Predictions", payload.predictions, pageRef, totalRef);
+  if (payload.predictionAI) addTextSection(pres, slides, "AI Forecast Commentary", payload.predictionAI, pageRef, totalRef);
+  addListSection(pres, slides, "Prediction Insights", payload.predictionInsights, pageRef, totalRef);
+  addListSection(pres, slides, "Recommendations", payload.recommendations, pageRef, totalRef);
+  addTextSection(pres, slides, "Data Story", payload.story, pageRef, totalRef);
 
   // Add consistent numbering after all pages are known.
-  pres._slides.forEach((slide, index) => {
-    if (index > 0) addFooter(slide, index + 1, pres._slides.length);
+  slides.forEach((slide, index) => {
+    if (index > 0) addFooter(slide, index + 1, slides.length);
   });
 
   return (await pres.write({ outputType: "blob" })) as Blob;
