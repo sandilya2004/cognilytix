@@ -1,6 +1,7 @@
 import pptxgen from "pptxgenjs";
 import html2canvas from "html2canvas";
 import type { ReportPayload } from "./export-pdf";
+import { CHART_SELECTOR, cleanText, computeKPIs } from "./export-pdf";
 
 const NAVY = "1E2761";
 const NAVY_DEEP = "0F1B3D";
@@ -8,207 +9,214 @@ const ACCENT = "4F46E5";
 const INK = "21293C";
 const MUTED = "6E778A";
 const SOFT = "F8FAFC";
-
-function fmtNum(n: number): string {
-  if (!isFinite(n)) return "—";
-  if (Math.abs(n) >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
-  if (Math.abs(n) >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toFixed(0);
-}
-
-function addFooter(slide: pptxgen.Slide, page: number, total: number) {
-  slide.addText(`Cognilytix · ${new Date().toLocaleDateString()}`, {
-    x: 0.4, y: 7.1, w: 5, h: 0.3, fontSize: 10, color: MUTED, fontFace: "Calibri",
-  });
-  slide.addText(`${page} / ${total}`, {
-    x: 12.1, y: 7.1, w: 1, h: 0.3, fontSize: 10, color: MUTED, align: "right", fontFace: "Calibri",
-  });
-}
+const WHITE = "FFFFFF";
 
 function addAccentBar(slide: pptxgen.Slide) {
   slide.addShape("rect", { x: 0, y: 0, w: 13.33, h: 0.15, fill: { color: ACCENT } });
 }
 
-export async function generateExecutivePPTX(payload: ReportPayload): Promise<Blob> {
-  const pres = new pptxgen();
-  pres.layout = "LAYOUT_WIDE"; // 13.33 x 7.5
-  pres.title = payload.title;
+function addFooter(slide: pptxgen.Slide, page: number, total: number) {
+  slide.addText(`Cognilytix · ${new Date().toLocaleDateString()}`, {
+    x: 0.4, y: 7.1, w: 5, h: 0.25, fontSize: 9, color: MUTED, fontFace: "Calibri",
+  });
+  slide.addText(`${page} / ${total}`, {
+    x: 12.1, y: 7.1, w: 0.8, h: 0.25, fontSize: 9, color: MUTED, align: "right", fontFace: "Calibri",
+  });
+}
 
-  // ---- Slide 1: Title ----
-  const s1 = pres.addSlide();
-  s1.background = { color: NAVY_DEEP };
-  s1.addShape("rect", { x: 0, y: 3.4, w: 13.33, h: 0.08, fill: { color: ACCENT } });
-  s1.addText(payload.title, {
-    x: 0.8, y: 2.4, w: 11.7, h: 1, fontSize: 48, bold: true, color: "FFFFFF", fontFace: "Calibri",
+function addPageTitle(slide: pptxgen.Slide, title: string) {
+  addAccentBar(slide);
+  slide.addText(title, {
+    x: 0.5, y: 0.35, w: 12.3, h: 0.65, fontSize: 29, bold: true, color: NAVY, fontFace: "Calibri",
+    breakLine: false, fit: "shrink",
   });
-  s1.addText("Executive Business Report", {
-    x: 0.8, y: 3.6, w: 11.7, h: 0.6, fontSize: 22, color: "CADCFC", fontFace: "Calibri",
-  });
-  s1.addText(`Dataset: ${payload.fileName || "—"}`, {
-    x: 0.8, y: 5.5, w: 11.7, h: 0.4, fontSize: 16, color: "CADCFC", fontFace: "Calibri",
-  });
-  s1.addText(`Generated: ${new Date().toLocaleDateString(undefined, { dateStyle: "long" })}`, {
-    x: 0.8, y: 6.0, w: 11.7, h: 0.4, fontSize: 14, color: "94A3B8", fontFace: "Calibri",
-  });
-  s1.addText("Powered by Cognilytix AI", {
-    x: 0.8, y: 6.9, w: 11.7, h: 0.3, fontSize: 11, color: "64748B", fontFace: "Calibri",
-  });
+}
 
-  // ---- Slide 2: Executive Summary ----
-  const s2 = pres.addSlide();
-  s2.background = { color: "FFFFFF" };
-  addAccentBar(s2);
-  s2.addText("Executive Summary", {
-    x: 0.5, y: 0.4, w: 12, h: 0.7, fontSize: 32, bold: true, color: NAVY, fontFace: "Calibri",
-  });
-  s2.addText(payload.executiveSummary || "AI executive summary unavailable. Use the Generate Executive Report button to create one.", {
-    x: 0.5, y: 1.3, w: 12.3, h: 5.5, fontSize: 16, color: INK, fontFace: "Calibri", valign: "top",
-  });
-  addFooter(s2, 2, 8);
-
-  // ---- Slide 3: KPI Cards ----
-  const s3 = pres.addSlide();
-  s3.background = { color: SOFT };
-  addAccentBar(s3);
-  s3.addText("Key Performance Indicators", {
-    x: 0.5, y: 0.4, w: 12, h: 0.7, fontSize: 32, bold: true, color: NAVY, fontFace: "Calibri",
-  });
-
-  if (payload.data) {
-    const numericCols = payload.data.columns.filter((c) => c.type === "number").map((c) => c.name);
-    const stringCols = payload.data.columns.filter((c) => c.type === "string").map((c) => c.name);
-    const find = (cols: string[], keys: string[]) => cols.find((n) => keys.some((k) => n.toLowerCase().includes(k))) ?? null;
-    const revCol = find(numericCols, ["revenue", "sales", "amount", "total", "income"]) ?? numericCols[0];
-    const profCol = find(numericCols, ["profit", "margin", "net"]);
-    const regionCol = find(stringCols, ["region", "country", "state", "city"]);
-    const productCol = find(stringCols, ["product", "item", "sku", "name", "category"]);
-    const sum = (col: string | null | undefined) => col ? payload.data!.rows.reduce((s, r) => s + (Number(r[col]) || 0), 0) : 0;
-    const bestBy = (cat: string | null) => {
-      if (!cat || !revCol) return "—";
-      const m = new Map<string, number>();
-      for (const r of payload.data!.rows) {
-        const k = String(r[cat] ?? "Unknown");
-        m.set(k, (m.get(k) || 0) + (Number(r[revCol]) || 0));
-      }
-      return Array.from(m.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
-    };
-    const growthPct = (() => {
-      if (!revCol || payload.data!.rows.length < 4) return null;
-      const n = payload.data!.rows.length;
-      const half = Math.floor(n / 2);
-      const a = payload.data!.rows.slice(0, half).reduce((s, r) => s + (Number(r[revCol]) || 0), 0);
-      const b = payload.data!.rows.slice(half).reduce((s, r) => s + (Number(r[revCol]) || 0), 0);
-      return a === 0 ? null : ((b - a) / a) * 100;
-    })();
-
-    const cards = [
-      { label: `Total ${revCol ?? "Value"}`, value: fmtNum(sum(revCol)), color: ACCENT },
-      { label: `Total ${profCol ?? "Profit"}`, value: fmtNum(sum(profCol)), color: "10B981" },
-      { label: "Growth", value: growthPct == null ? "—" : `${growthPct.toFixed(1)}%`, color: "F59E0B" },
-      { label: "Best Region", value: bestBy(regionCol), color: "0EA5E9" },
-      { label: "Best Product", value: bestBy(productCol), color: "8B5CF6" },
-      { label: "Total Records", value: fmtNum(payload.data.rows.length), color: "64748B" },
-    ];
-
-    const cardW = 4.0, cardH = 2.4, gap = 0.25;
-    cards.forEach((c, i) => {
-      const col = i % 3;
-      const row = Math.floor(i / 3);
-      const x = 0.5 + col * (cardW + gap);
-      const y = 1.5 + row * (cardH + gap);
-      s3.addShape("rect", { x, y, w: cardW, h: cardH, fill: { color: "FFFFFF" }, line: { color: "E2E8F0", width: 0.5 } });
-      s3.addShape("rect", { x, y, w: 0.1, h: cardH, fill: { color: c.color } });
-      s3.addText(c.label.toUpperCase(), { x: x + 0.3, y: y + 0.25, w: cardW - 0.5, h: 0.4, fontSize: 11, color: MUTED, bold: true, fontFace: "Calibri" });
-      s3.addText(c.value, { x: x + 0.3, y: y + 0.8, w: cardW - 0.5, h: 1.4, fontSize: 32, bold: true, color: INK, fontFace: "Calibri", valign: "middle" });
-    });
+function splitParagraph(text: string, maxChars = 680): string[] {
+  const words = cleanText(text).split(/\s+/).filter(Boolean);
+  const chunks: string[] = [];
+  let current = "";
+  for (const word of words) {
+    if (current && `${current} ${word}`.length > maxChars) {
+      chunks.push(current);
+      current = word;
+    } else current = current ? `${current} ${word}` : word;
   }
-  addFooter(s3, 3, 8);
+  if (current) chunks.push(current);
+  return chunks.length ? chunks : ["No content available."];
+}
 
-  // ---- Slide 4: Charts ----
-  const s4 = pres.addSlide();
-  s4.background = { color: "FFFFFF" };
-  addAccentBar(s4);
-  s4.addText("Charts & Trends", { x: 0.5, y: 0.4, w: 12, h: 0.7, fontSize: 32, bold: true, color: NAVY, fontFace: "Calibri" });
-
-  const chartEls = Array.from(document.querySelectorAll("#chart-grid > div, #auto-dashboard-root")).slice(0, 4);
-  if (chartEls.length === 0) {
-    s4.addText("No charts have been generated yet. Visit the Dashboard tab to build visualizations.", {
-      x: 0.5, y: 3, w: 12.3, h: 1, fontSize: 16, color: MUTED, align: "center", fontFace: "Calibri",
+function addTextSection(
+  pres: pptxgen,
+  slides: pptxgen.Slide[],
+  title: string,
+  text: string | undefined,
+  pageRef: { value: number },
+  totalRef: { value: number },
+) {
+  const chunks = splitParagraph(text || "No content available.");
+  chunks.forEach((chunk, index) => {
+    const slide = addSlide(pres, slides);
+    slide.background = { color: index % 2 ? WHITE : SOFT };
+    addPageTitle(slide, chunks.length > 1 ? `${title} (${index + 1}/${chunks.length})` : title);
+    slide.addText(chunk, {
+      x: 0.65, y: 1.35, w: 12.0, h: 5.35, fontSize: 18, color: INK,
+      fontFace: "Calibri", valign: "top", breakLine: false, fit: "shrink",
+      paraSpaceAfter: 10, margin: 0.08,
     });
-  } else {
-    const positions = chartEls.length === 1
-      ? [{ x: 1.5, y: 1.4, w: 10.3, h: 5.4 }]
-      : chartEls.length === 2
-      ? [{ x: 0.5, y: 1.4, w: 6.1, h: 5.4 }, { x: 6.7, y: 1.4, w: 6.1, h: 5.4 }]
-      : [
-          { x: 0.5, y: 1.4, w: 6.1, h: 2.6 }, { x: 6.7, y: 1.4, w: 6.1, h: 2.6 },
-          { x: 0.5, y: 4.1, w: 6.1, h: 2.6 }, { x: 6.7, y: 4.1, w: 6.1, h: 2.6 },
-        ];
-    for (let i = 0; i < Math.min(chartEls.length, positions.length); i++) {
-      try {
-        const canvas = await html2canvas(chartEls[i] as HTMLElement, { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false });
-        s4.addImage({ data: canvas.toDataURL("image/png"), ...positions[i] });
-      } catch {
-        // skip
-      }
+    pageRef.value += 1;
+    totalRef.value += 1;
+  });
+}
+
+function addListSection(
+  pres: pptxgen,
+  slides: pptxgen.Slide[],
+  title: string,
+  items: string[] | undefined,
+  pageRef: { value: number },
+  totalRef: { value: number },
+) {
+  const list = (items ?? []).map(cleanText).filter(Boolean);
+  const rows = list.length ? list : ["No items available."];
+  const groups: string[][] = [];
+  let group: string[] = [];
+  let weight = 0;
+  for (const item of rows) {
+    const itemWeight = Math.max(1, Math.ceil(item.length / 110));
+    if (group.length && (group.length >= 5 || weight + itemWeight > 13)) {
+      groups.push(group);
+      group = [];
+      weight = 0;
+    }
+    group.push(item);
+    weight += itemWeight;
+  }
+  if (group.length) groups.push(group);
+
+  groups.forEach((itemsInGroup, index) => {
+    const slide = addSlide(pres, slides);
+    slide.background = { color: index % 2 ? WHITE : SOFT };
+    addPageTitle(slide, groups.length > 1 ? `${title} (${index + 1}/${groups.length})` : title);
+    let y = 1.28;
+    for (const item of itemsInGroup) {
+      const lines = Math.max(1, Math.ceil(item.length / 112));
+      const height = Math.min(1.1, 0.42 + lines * 0.26);
+      slide.addText(item, {
+        x: 0.85, y, w: 11.8, h: height, fontSize: 17, color: INK, fontFace: "Calibri",
+        bullet: { indent: 17 }, valign: "top", fit: "shrink", margin: 0.03,
+      });
+      y += height + 0.17;
+    }
+    pageRef.value += 1;
+    totalRef.value += 1;
+  });
+}
+
+async function captureChartImages(): Promise<string[]> {
+  const elements = Array.from(document.querySelectorAll(CHART_SELECTOR));
+  const images: string[] = [];
+  for (const element of elements.slice(0, 12)) {
+    const el = element as HTMLElement;
+    if (el.getBoundingClientRect().width < 20 || el.getBoundingClientRect().height < 20) continue;
+    try {
+      const canvas = await html2canvas(el, { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false });
+      images.push(canvas.toDataURL("image/png"));
+    } catch {
+      // Preserve other charts if an individual visualization cannot be captured.
     }
   }
-  addFooter(s4, 4, 8);
+  return images;
+}
 
-  // ---- Slide 5: Insights ----
-  const s5 = pres.addSlide();
-  s5.background = { color: SOFT };
-  addAccentBar(s5);
-  s5.addText("AI Insights", { x: 0.5, y: 0.4, w: 12, h: 0.7, fontSize: 32, bold: true, color: NAVY, fontFace: "Calibri" });
-  const insights = (payload.insights ?? []).slice(0, 7);
-  if (insights.length === 0) {
-    s5.addText("No insights generated yet.", { x: 0.5, y: 3, w: 12.3, h: 1, fontSize: 16, color: MUTED, align: "center", fontFace: "Calibri" });
-  } else {
-    s5.addText(insights.map((t) => ({ text: t, options: { bullet: { code: "25CF" }, color: INK } })), {
-      x: 0.6, y: 1.3, w: 12.1, h: 5.6, fontSize: 16, fontFace: "Calibri", paraSpaceAfter: 8, valign: "top",
+function addSlide(pres: pptxgen, slides: pptxgen.Slide[]): pptxgen.Slide {
+  const slide = pres.addSlide();
+  slides.push(slide);
+  return slide;
+}
+
+export async function generateExecutivePPTX(payload: ReportPayload): Promise<Blob> {
+  const pres = new pptxgen();
+  const slides: pptxgen.Slide[] = [];
+  pres.layout = "LAYOUT_WIDE";
+  pres.title = payload.title;
+  pres.author = "Cognilytix AI";
+
+  const cover = addSlide(pres, slides);
+  cover.background = { color: NAVY_DEEP };
+  cover.addShape("rect", { x: 0, y: 3.55, w: 13.33, h: 0.08, fill: { color: ACCENT } });
+  cover.addText(cleanText(payload.title), {
+    x: 0.8, y: 2.1, w: 11.7, h: 1.15, fontSize: 42, bold: true, color: WHITE,
+    fontFace: "Calibri", align: "center", valign: "middle", fit: "shrink",
+  });
+  cover.addText("Executive Business Report", { x: 0.8, y: 3.85, w: 11.7, h: 0.55, fontSize: 22, color: "CADCFC", fontFace: "Calibri", align: "center" });
+  cover.addText(`Dataset: ${cleanText(payload.fileName || "—")}`, { x: 0.8, y: 5.5, w: 11.7, h: 0.4, fontSize: 15, color: "CADCFC", fontFace: "Calibri", align: "center", fit: "shrink" });
+  cover.addText(`Generated: ${new Date().toLocaleDateString(undefined, { dateStyle: "long" })}`, { x: 0.8, y: 6.0, w: 11.7, h: 0.35, fontSize: 13, color: "94A3B8", fontFace: "Calibri", align: "center" });
+
+  let page = 2;
+  let total = 2;
+  const pageRef = { get value() { return page; }, set value(v: number) { page = v; } };
+  const totalRef = { get value() { return total; }, set value(v: number) { total = v; } };
+
+  addTextSection(pres, slides, "Executive Summary", payload.executiveSummary, pageRef, totalRef);
+
+  const kpiSlide = addSlide(pres, slides);
+  kpiSlide.background = { color: SOFT };
+  addPageTitle(kpiSlide, "Key Performance Indicators");
+  if (payload.data) {
+    const k = computeKPIs(payload.data);
+    const cards = [
+      ...k.cards,
+    ];
+    cards.forEach((card, i) => {
+      const x = 0.55 + (i % 3) * 4.1;
+      const y = 1.45 + Math.floor(i / 3) * 2.45;
+      kpiSlide.addShape("rect", { x, y, w: 3.85, h: 2.1, fill: { color: WHITE }, line: { color: "E2E8F0", width: 0.6 } });
+      kpiSlide.addShape("rect", { x, y, w: 0.09, h: 2.1, fill: { color: ACCENT } });
+      kpiSlide.addText(card.label.toUpperCase(), { x: x + 0.25, y: y + 0.25, w: 3.35, h: 0.35, fontSize: 11, color: MUTED, bold: true, fontFace: "Calibri", fit: "shrink" });
+      kpiSlide.addText(cleanText(card.value), { x: x + 0.25, y: y + 0.8, w: 3.35, h: 0.95, fontSize: 25, bold: true, color: INK, fontFace: "Calibri", valign: "middle", fit: "shrink" });
     });
-  }
-  addFooter(s5, 5, 8);
-
-  // ---- Slide 6: Predictions ----
-  const s6 = pres.addSlide();
-  s6.background = { color: "FFFFFF" };
-  addAccentBar(s6);
-  s6.addText("Prediction Insights", { x: 0.5, y: 0.4, w: 12, h: 0.7, fontSize: 32, bold: true, color: NAVY, fontFace: "Calibri" });
-  const preds = (payload.predictions ?? []).slice(0, 7);
-  if (preds.length === 0) {
-    s6.addText("No prediction insights available.", { x: 0.5, y: 3, w: 12.3, h: 1, fontSize: 16, color: MUTED, align: "center", fontFace: "Calibri" });
   } else {
-    s6.addText(preds.map((t) => ({ text: t, options: { bullet: { code: "25B6" }, color: INK } })), {
-      x: 0.6, y: 1.3, w: 12.1, h: 5.6, fontSize: 16, fontFace: "Calibri", paraSpaceAfter: 8, valign: "top",
-    });
+    kpiSlide.addText("No dataset was available for KPI calculations.", { x: 0.8, y: 3, w: 11.7, h: 0.5, fontSize: 16, color: MUTED, align: "center", fontFace: "Calibri" });
   }
-  addFooter(s6, 6, 8);
+  page += 1;
+  total += 1;
 
-  // ---- Slide 7: Recommendations ----
-  const s7 = pres.addSlide();
-  s7.background = { color: SOFT };
-  addAccentBar(s7);
-  s7.addText("Recommendations", { x: 0.5, y: 0.4, w: 12, h: 0.7, fontSize: 32, bold: true, color: NAVY, fontFace: "Calibri" });
-  const recs = (payload.recommendations ?? []).slice(0, 7);
-  if (recs.length === 0) {
-    s7.addText("Generate the executive summary to populate recommendations.", { x: 0.5, y: 3, w: 12.3, h: 1, fontSize: 16, color: MUTED, align: "center", fontFace: "Calibri" });
+  const chartImages = await captureChartImages();
+  if (!chartImages.length) {
+    addTextSection(pres, slides, "Charts & Visualizations", "No charts were available to include in this report.", pageRef, totalRef);
   } else {
-    s7.addText(recs.map((t) => ({ text: t, options: { bullet: { code: "2713" }, color: INK } })), {
-      x: 0.6, y: 1.3, w: 12.1, h: 5.6, fontSize: 16, fontFace: "Calibri", paraSpaceAfter: 10, valign: "top",
-    });
+    for (let i = 0; i < chartImages.length; i += 2) {
+      const slide = addSlide(pres, slides);
+      slide.background = { color: WHITE };
+      addPageTitle(slide, chartImages.length > 2 ? `Charts & Visualizations (${Math.floor(i / 2) + 1})` : "Charts & Visualizations");
+      const batch = chartImages.slice(i, i + 2);
+      batch.forEach((data, j) => {
+        const pos = batch.length === 1
+          ? { x: 0.85, y: 1.35, w: 11.65, h: 5.4 }
+          : { x: 0.55 + j * 6.25, y: 1.55, w: 6.05, h: 4.95 };
+        slide.addImage({ data, x: pos.x, y: pos.y, sizing: { type: "contain", w: pos.w, h: pos.h } });
+      });
+      page += 1;
+      total += 1;
+    }
   }
-  addFooter(s7, 7, 8);
 
-  // ---- Slide 8: Conclusion ----
-  const s8 = pres.addSlide();
-  s8.background = { color: NAVY_DEEP };
-  s8.addText("Thank You", { x: 0.5, y: 2.6, w: 12.3, h: 1.2, fontSize: 56, bold: true, color: "FFFFFF", align: "center", fontFace: "Calibri" });
-  s8.addText("Questions, ideas, next steps?", { x: 0.5, y: 4.0, w: 12.3, h: 0.6, fontSize: 22, color: "CADCFC", align: "center", fontFace: "Calibri" });
-  s8.addText("Cognilytix AI · AI-powered business analytics", { x: 0.5, y: 6.6, w: 12.3, h: 0.5, fontSize: 12, color: "94A3B8", align: "center", fontFace: "Calibri" });
+  addListSection(pres, slides, "AI Insights", payload.insights, pageRef, totalRef);
+  addListSection(pres, slides, "Growth Opportunities", payload.opportunities, pageRef, totalRef);
+  addListSection(pres, slides, "Problems & Risk Areas", payload.problems, pageRef, totalRef);
+  addListSection(pres, slides, "Predictions", payload.predictions, pageRef, totalRef);
+  if (payload.predictionAI) addTextSection(pres, slides, "AI Forecast Commentary", payload.predictionAI, pageRef, totalRef);
+  addListSection(pres, slides, "Prediction Insights", payload.predictionInsights, pageRef, totalRef);
+  addListSection(pres, slides, "Recommendations", payload.recommendations, pageRef, totalRef);
+  addTextSection(pres, slides, "Data Story", payload.story, pageRef, totalRef);
 
-  const blob = (await pres.write({ outputType: "blob" })) as Blob;
-  return blob;
+  // Add consistent numbering after all pages are known.
+  slides.forEach((slide, index) => {
+    if (index > 0) addFooter(slide, index + 1, slides.length);
+  });
+
+  return (await pres.write({ outputType: "blob" })) as Blob;
 }
 
 export async function downloadExecutivePPTX(payload: ReportPayload) {
