@@ -62,7 +62,7 @@ function addTextSection(
     slide.addText(chunk, {
       x: 0.65, y: 1.35, w: 12.0, h: 5.35, fontSize: 18, color: INK,
       fontFace: "Calibri", valign: "top", breakLine: false, fit: "shrink",
-      paraSpaceAfterPt: 10, margin: 0.08,
+      paraSpaceAfter: 10, margin: 0.08,
     });
     pageRef.value += 1;
     totalRef.value += 1;
@@ -104,7 +104,7 @@ function addListSection(
       const height = Math.min(1.1, 0.42 + lines * 0.26);
       slide.addText(item, {
         x: 0.85, y, w: 11.8, h: height, fontSize: 17, color: INK, fontFace: "Calibri",
-        bullet: { indent: 17 }, hanging: 4, valign: "top", fit: "shrink", margin: 0.03,
+        bullet: { indent: 17 }, valign: "top", fit: "shrink", margin: 0.03,
       });
       y += height + 0.17;
     }
@@ -166,12 +166,7 @@ export async function generateExecutivePPTX(payload: ReportPayload): Promise<Blo
   if (payload.data) {
     const k = computeKPIs(payload.data);
     const cards = [
-      { label: `Total ${k.revLabel}`, value: k.totalRevenue },
-      { label: `Total ${k.profLabel}`, value: k.totalProfit },
-      { label: "Growth", value: k.growthPct == null ? "—" : `${k.growthPct.toFixed(1)}%` },
-      { label: "Best Region", value: k.bestRegion ?? "—" },
-      { label: "Best Product", value: k.bestProduct ?? "—" },
-      { label: "Total Records", value: payload.data.rows.length },
+      ...k.cards,
     ];
     cards.forEach((card, i) => {
       const x = 0.55 + (i % 3) * 4.1;
@@ -179,8 +174,7 @@ export async function generateExecutivePPTX(payload: ReportPayload): Promise<Blo
       kpiSlide.addShape("rect", { x, y, w: 3.85, h: 2.1, fill: { color: WHITE }, line: { color: "E2E8F0", width: 0.6 } });
       kpiSlide.addShape("rect", { x, y, w: 0.09, h: 2.1, fill: { color: ACCENT } });
       kpiSlide.addText(card.label.toUpperCase(), { x: x + 0.25, y: y + 0.25, w: 3.35, h: 0.35, fontSize: 11, color: MUTED, bold: true, fontFace: "Calibri", fit: "shrink" });
-      const display = typeof card.value === "number" ? (card.value.toLocaleString(undefined, { maximumFractionDigits: 2 })) : cleanText(String(card.value));
-      kpiSlide.addText(display, { x: x + 0.25, y: y + 0.8, w: 3.35, h: 0.95, fontSize: 25, bold: true, color: INK, fontFace: "Calibri", valign: "mid", fit: "shrink" });
+      kpiSlide.addText(cleanText(card.value), { x: x + 0.25, y: y + 0.8, w: 3.35, h: 0.95, fontSize: 25, bold: true, color: INK, fontFace: "Calibri", valign: "middle", fit: "shrink" });
     });
   } else {
     kpiSlide.addText("No dataset was available for KPI calculations.", { x: 0.8, y: 3, w: 11.7, h: 0.5, fontSize: 16, color: MUTED, align: "center", fontFace: "Calibri" });
