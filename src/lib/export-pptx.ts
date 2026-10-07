@@ -147,7 +147,7 @@ export async function generateExecutivePPTX(payload: ReportPayload): Promise<Blo
   cover.addShape("rect", { x: 0, y: 3.55, w: 13.33, h: 0.08, fill: { color: ACCENT } });
   cover.addText(cleanText(payload.title), {
     x: 0.8, y: 2.1, w: 11.7, h: 1.15, fontSize: 42, bold: true, color: WHITE,
-    fontFace: "Calibri", align: "center", valign: "mid", fit: "shrink",
+    fontFace: "Calibri", align: "center", valign: "middle", fit: "shrink",
   });
   cover.addText("Executive Business Report", { x: 0.8, y: 3.85, w: 11.7, h: 0.55, fontSize: 22, color: "CADCFC", fontFace: "Calibri", align: "center" });
   cover.addText(`Dataset: ${cleanText(payload.fileName || "—")}`, { x: 0.8, y: 5.5, w: 11.7, h: 0.4, fontSize: 15, color: "CADCFC", fontFace: "Calibri", align: "center", fit: "shrink" });
