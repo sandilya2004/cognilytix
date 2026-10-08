@@ -33,16 +33,19 @@ function addPageTitle(slide: pptxgen.Slide, title: string) {
 }
 
 function splitParagraph(text: string, maxChars = 680): string[] {
-  const words = cleanText(text).split(/\s+/).filter(Boolean);
+  const paragraphs = cleanText(text).split(/\n\s*\n/).map((part) => part.trim()).filter(Boolean);
   const chunks: string[] = [];
-  let current = "";
-  for (const word of words) {
-    if (current && `${current} ${word}`.length > maxChars) {
-      chunks.push(current);
-      current = word;
-    } else current = current ? `${current} ${word}` : word;
+  for (const paragraph of paragraphs) {
+    const words = paragraph.split(/\s+/).filter(Boolean);
+    let current = "";
+    for (const word of words) {
+      if (current && `${current} ${word}`.length > maxChars) {
+        chunks.push(current);
+        current = word;
+      } else current = current ? `${current} ${word}` : word;
+    }
+    if (current) chunks.push(current);
   }
-  if (current) chunks.push(current);
   return chunks.length ? chunks : ["No content available."];
 }
 
