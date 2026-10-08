@@ -87,7 +87,7 @@ function addListSection(
   let weight = 0;
   for (const item of rows) {
     const itemWeight = Math.max(1, Math.ceil(item.length / 110));
-    if (group.length && (group.length >= 5 || weight + itemWeight > 13)) {
+    if (group.length && (group.length >= 5 || weight + itemWeight > 9)) {
       groups.push(group);
       group = [];
       weight = 0;
