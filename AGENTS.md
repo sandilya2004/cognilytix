@@ -1,0 +1,1 @@
+- Mirror generated story and prediction content in the shared report store so exports can include results from inactive tabs.

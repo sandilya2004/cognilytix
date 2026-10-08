@@ -232,19 +232,19 @@ export async function generateExecutivePDF(payload: ReportPayload): Promise<Blob
     }
   }
 
-  const has = (a?: string[]) => !!a && a.length > 0;
-  if (has(payload.insights)) { newPage(); section("AI Insights"); bullets(payload.insights!); }
-  if (has(payload.opportunities)) { section("Growth Opportunities"); bullets(payload.opportunities!); }
-  if (has(payload.problems)) { section("Problems & Risk Areas"); bullets(payload.problems!); }
+  const has = (a?: string[]): a is string[] => !!a && a.length > 0;
+  if (has(payload.insights)) { newPage(); section("AI Insights"); bullets(payload.insights); }
+  if (has(payload.opportunities)) { section("Growth Opportunities"); bullets(payload.opportunities); }
+  if (has(payload.problems)) { section("Problems & Risk Areas"); bullets(payload.problems); }
 
   if (has(payload.predictions) || payload.predictionAI || has(payload.predictionInsights)) {
     newPage();
-    if (has(payload.predictions)) { section("Predictions"); bullets(payload.predictions!); }
+    if (has(payload.predictions)) { section("Predictions"); bullets(payload.predictions); }
     if (payload.predictionAI) { section("AI Forecast Commentary"); paragraph(payload.predictionAI); }
-    if (has(payload.predictionInsights)) { section("Prediction Insights"); bullets(payload.predictionInsights!); }
+    if (has(payload.predictionInsights)) { section("Prediction Insights"); bullets(payload.predictionInsights); }
   }
 
-  if (has(payload.recommendations)) { section("Recommendations"); bullets(payload.recommendations!); }
+  if (has(payload.recommendations)) { section("Recommendations"); bullets(payload.recommendations); }
 
   if (payload.story) { newPage(); section("Data Story"); paragraph(payload.story); }
 

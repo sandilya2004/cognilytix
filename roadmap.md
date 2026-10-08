@@ -1,0 +1,3 @@
+- [x] Keep generated story and prediction results available while switching dashboard tabs; clear them on dataset reset.
+- [x] Include the executive summary, charts, insights, risks, predictions, recommendations, and story in PDF and PowerPoint exports.
+- [ ] Verify tests, typecheck, and preview build.
