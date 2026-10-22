@@ -577,8 +577,8 @@ export default function Dashboard() {
           </div>
         )}
         {/* AUTO DASHBOARD TAB */}
-        {activeTab === "auto" && data && (
-          <div className="max-w-7xl mx-auto p-6 space-y-4">
+        {data && (
+          <div data-tab-panel className={activeTab === "auto" ? "max-w-7xl mx-auto p-6 space-y-4" : "hidden"}>
             <ReportActions mode="executive" title={fileName.replace(/\.[^/.]+$/, "") || "Cognilytix Report"} fileName={fileName} data={data} charts={charts} summaryText={summaryText} />
             <AutoDashboard data={data} />
           </div>
