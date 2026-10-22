@@ -1,6 +1,11 @@
 import { useMemo, useState } from "react";
-import { Palette, Shuffle } from "lucide-react";
+import { Palette, Shuffle, Plus, X, Hash } from "lucide-react";
 import { TrendingUp, DollarSign, Award, MapPin, Package, FileDown } from "lucide-react";
+import VisualPicker from "@/components/dashboard/VisualPicker";
+import AxisBuilder from "@/components/dashboard/AxisBuilder";
+import ChartCard from "@/components/dashboard/ChartCard";
+import { buildAxisChart } from "@/lib/axis-chart";
+import type { ChartType } from "@/lib/chart-types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -287,7 +292,13 @@ export default function AutoDashboard({ data }: Props) {
       {shown.map((c, i) => (
         <Card key={c.key} className={layout !== "stacked" && c.wide && i === 0 ? "md:col-span-2" : ""} style={{ borderTop: `3px solid ${P[i % P.length]}` }}>
           <CardHeader className="pb-2"><CardTitle className="text-sm">{c.title}</CardTitle></CardHeader>
-          <CardContent><ResponsiveContainer width="100%" height={260}>{c.node}</ResponsiveContainer></CardContent>
+          <CardContent>
+            {c.empty ? (
+              <div className="h-[260px] flex items-center justify-center text-sm text-muted-foreground">No rows match the selected slicers.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={260}>{c.node}</ResponsiveContainer>
+            )}
+          </CardContent>
         </Card>
       ))}
     </div>
@@ -340,20 +351,47 @@ export default function AutoDashboard({ data }: Props) {
         </CardContent>
       </Card>
 
+      <div className="flex justify-end">
+        <Button size="sm" variant={showBuilder ? "default" : "outline"} onClick={() => setShowBuilder((v) => !v)}>
+          <Plus className="h-4 w-4 mr-1" /> More Charts
+        </Button>
+      </div>
+      {showBuilder && (
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">1. Pick a visual (or “KPI Card”). 2. Drag columns into the X and Y boxes. 3. Click Create — it is added to this dashboard and the PDF.</p>
+          <VisualPicker onSelect={(t) => setPendingType(t)} />
+          <AxisBuilder
+            columns={data.columns}
+            presetType={pendingType}
+            onPresetConsumed={() => setPendingType(null)}
+            onCreateChart={(x, y, type) => {
+              setCustomSpecs((prev) => [...prev, { id: Math.random().toString(36).slice(2, 10), x, y, type }]);
+              toast.success(type === "kpi" || type === "card" ? "KPI card added to dashboard" : "Chart added to dashboard");
+            }}
+          />
+        </div>
+      )}
+
       <div id="auto-dashboard-root" className="space-y-4 bg-background p-2 rounded-lg">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {kpis.map((k, i) => {
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          {[...kpis, ...customKpis.map((c) => ({ label: c.kpiLabel ?? c.title, value: String(c.kpiValue ?? ""), icon: Hash, id: c.id }))].map((k, i) => {
             const Icon = k.icon;
             const c = P[i % P.length];
+            const id = "id" in k ? (k as { id: string }).id : null;
             return (
-              <Card key={k.label} className="overflow-hidden" style={{ background: `linear-gradient(135deg, ${c}22, transparent 70%)`, borderColor: `${c}66` }}>
-                <CardContent className="p-4 flex items-center gap-3">
+              <Card key={id ?? k.label} className="relative" style={{ background: `linear-gradient(135deg, ${c}22, transparent 70%)`, borderColor: `${c}66` }}>
+                {id && (
+                  <button aria-label="Remove KPI" className="absolute top-1.5 right-1.5 text-muted-foreground hover:text-destructive" onClick={() => setCustomSpecs((p) => p.filter((s) => s.id !== id))}>
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                <CardContent className="p-4 flex items-start gap-3">
                   <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg text-primary-foreground shrink-0" style={{ background: c }}>
                     <Icon className="h-5 w-5" />
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium truncate">{k.label}</p>
-                    <p className="text-xl font-bold text-foreground truncate">{k.value}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium leading-snug break-words">{k.label}</p>
+                    <p className="text-lg font-bold text-foreground leading-snug break-words mt-0.5" title={k.value}>{k.value}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -371,6 +409,16 @@ export default function AutoDashboard({ data }: Props) {
         )}
         {shown.length < chartCount && (
           <p className="text-xs text-muted-foreground text-center">Your data supports {shown.length} automatic charts.</p>
+        )}
+        {customVisuals.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-foreground">Your Charts</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              {customVisuals.map((c) => (
+                <ChartCard key={c.id} config={c} onRemove={(id) => setCustomSpecs((p) => p.filter((s) => s.id !== id))} />
+              ))}
+            </div>
+          </div>
         )}
         <Badge variant="outline" className="text-[10px]">Palette: {paletteName}</Badge>
       </div>
