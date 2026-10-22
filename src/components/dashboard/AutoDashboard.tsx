@@ -103,9 +103,43 @@ export default function AutoDashboard({ data }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cols, filteredRows]);
 
-  const trendData = useMemo(() => {
-    if (!cols.dateCols[0] || !cols.revenueCol) return null;
-    const second = cols.profitCol && cols.profitCol !== cols.revenueCol ? cols.profitCol : null;
+  // Chart plan is decided from the full dataset so slicers never remove charts.
+  type Spec =
+    | { kind: "trend"; val: string; val2: string | null }
+    | { kind: "cumulative"; val: string }
+    | { kind: "hbar" | "vbar" | "pie"; cat: string; val: string }
+    | { kind: "comp"; cat: string; vals: string[] };
+  const specs = useMemo<Spec[]>(() => {
+    const measures = cols.numericCols.filter((n) => !/(^|[\s_-])id$|^id$|code|zip|postal|phone|year/i.test(n));
+    const vals = measures.length ? measures : cols.numericCols;
+    const primary = cols.revenueCol && vals.includes(cols.revenueCol) ? cols.revenueCol : vals[0];
+    if (!primary) return [];
+    const second = cols.profitCol && cols.profitCol !== primary && vals.includes(cols.profitCol) ? cols.profitCol : vals.find((v) => v !== primary) ?? null;
+    const cats = cols.stringCols.filter((c) => {
+      const n = new Set(data.rows.map((r) => String(r[c] ?? ""))).size;
+      return n >= 2 && n <= 60;
+    });
+    const ordered = [cols.categoryCol, cols.regionCol, ...cats].filter((c, i, a): c is string => !!c && cats.includes(c) && a.indexOf(c) === i);
+    const out: Spec[] = [];
+    if (cols.dateCols[0]) out.push({ kind: "trend", val: primary, val2: second });
+    if (ordered[0]) out.push({ kind: "hbar", cat: ordered[0], val: primary });
+    if (ordered[1]) out.push({ kind: "pie", cat: ordered[1], val: primary });
+    if (second && ordered[0]) out.push({ kind: "comp", cat: ordered[0], vals: [primary, second] });
+    if (cols.dateCols[0]) out.push({ kind: "cumulative", val: primary });
+    // Fill remaining slots with every category × measure combination
+    const kinds: ("vbar" | "pie" | "hbar")[] = ["vbar", "pie", "hbar"];
+    let k = 0;
+    for (const v of [primary, ...vals.filter((x) => x !== primary)]) {
+      for (const c of ordered) {
+        if (out.some((s) => "cat" in s && s.cat === c && s.val === v)) continue;
+        out.push({ kind: kinds[k++ % 3], cat: c, val: v });
+      }
+    }
+    if (second && !out.some((s) => s.kind === "comp")) out.push({ kind: "comp", cat: ordered[0] ?? primary, vals: [primary, second] });
+    return out;
+  }, [cols, data.rows]);
+
+  const trendOf = (val: string, val2: string | null) => {
     const map = new Map<string, { value: number; value2: number }>();
     for (const r of filteredRows) {
       const raw = r[cols.dateCols[0]];
@@ -113,35 +147,72 @@ export default function AutoDashboard({ data }: Props) {
       const d = new Date(String(raw));
       const key = isNaN(d.getTime()) ? String(raw) : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       const e = map.get(key) || { value: 0, value2: 0 };
-      e.value += Number(r[cols.revenueCol!]) || 0;
-      if (second) e.value2 += Number(r[second]) || 0;
+      e.value += Number(r[val]) || 0;
+      if (val2) e.value2 += Number(r[val2]) || 0;
       map.set(key, e);
     }
     return Array.from(map.entries()).map(([period, v]) => ({ period, ...v })).sort((a, b) => a.period.localeCompare(b.period));
-  }, [cols, filteredRows]);
+  };
 
-  const barData = useMemo(() => cols.categoryCol && cols.revenueCol ? aggregateBy(filteredRows, cols.categoryCol, cols.revenueCol).slice(0, 8) : null, [cols, filteredRows]);
-  const pieCol = cols.regionCol ?? cols.stringCols.find((c) => c !== cols.categoryCol) ?? null;
-  const pieData = useMemo(() => pieCol && cols.revenueCol ? aggregateBy(filteredRows, pieCol, cols.revenueCol).slice(0, 6) : null, [pieCol, cols, filteredRows]);
-  const compData = useMemo(() => {
-    if (cols.numericCols.length < 2 || !cols.categoryCol) return null;
-    const keys = cols.numericCols.slice(0, 2);
-    const map = new Map<string, Record<string, number>>();
-    for (const r of filteredRows) {
-      const k = String(r[cols.categoryCol] ?? "Unknown");
-      const e = map.get(k) || {};
-      for (const nc of keys) e[nc] = (e[nc] || 0) + (Number(r[nc]) || 0);
-      map.set(k, e);
+  const tip = { contentStyle: { background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 } };
+  const grid = <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />;
+
+  const renderSpec = (s: Spec, idx: number): { key: string; title: string; wide?: boolean; empty: boolean; node: JSX.Element } => {
+    const key = `${s.kind}-${idx}`;
+    if (s.kind === "trend") {
+      const d = trendOf(s.val, s.val2);
+      return { key, title: `${s.val} Trend`, wide: true, empty: d.length === 0, node: (
+        <ComposedChart data={d}>{grid}
+          <XAxis dataKey="period" tick={{ fontSize: 11 }} /><YAxis tick={{ fontSize: 11 }} tickFormatter={formatNum} /><Tooltip {...tip} /><Legend wrapperStyle={{ fontSize: 11 }} />
+          <Bar dataKey="value" name={s.val} fill={P[0]} radius={[4, 4, 0, 0]} />
+          {s.val2 && <Line type="monotone" dataKey="value2" name={s.val2} stroke={P[1]} strokeWidth={2.5} dot={{ r: 3 }} />}
+        </ComposedChart>) };
     }
-    return Array.from(map.entries()).map(([name, v]) => ({ name, ...v }))
-      .sort((a, b) => (Number(b[keys[0]]) || 0) - (Number(a[keys[0]]) || 0)).slice(0, 8);
-  }, [cols, filteredRows]);
-  const secondCatCol = cols.stringCols.find((c) => c !== cols.categoryCol && c !== pieCol) ?? null;
-  const secondBar = useMemo(() => {
-    const val = cols.numericCols[1] ?? cols.revenueCol;
-    if (!secondCatCol || !val) return null;
-    return { val, rows: aggregateBy(filteredRows, secondCatCol, val).slice(0, 8) };
-  }, [cols, secondCatCol, filteredRows]);
+    if (s.kind === "cumulative") {
+      const d = trendOf(s.val, null).reduce<{ period: string; value: number }[]>((acc, x) => { acc.push({ period: x.period, value: (acc.at(-1)?.value ?? 0) + x.value }); return acc; }, []);
+      return { key, title: `Cumulative ${s.val}`, empty: d.length === 0, node: (
+        <AreaChart data={d}>
+          <defs><linearGradient id={`autoArea${idx}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={P[2]} stopOpacity={0.5} /><stop offset="100%" stopColor={P[2]} stopOpacity={0.05} /></linearGradient></defs>
+          {grid}<XAxis dataKey="period" tick={{ fontSize: 11 }} /><YAxis tick={{ fontSize: 11 }} tickFormatter={formatNum} /><Tooltip {...tip} />
+          <Area type="monotone" dataKey="value" stroke={P[2]} strokeWidth={2.5} fill={`url(#autoArea${idx})`} />
+        </AreaChart>) };
+    }
+    if (s.kind === "comp") {
+      const map = new Map<string, Record<string, number>>();
+      for (const r of filteredRows) {
+        const k = String(r[s.cat] ?? "Unknown");
+        const e = map.get(k) || {};
+        for (const nc of s.vals) e[nc] = (e[nc] || 0) + (Number(r[nc]) || 0);
+        map.set(k, e);
+      }
+      const d = Array.from(map.entries()).map(([name, v]) => ({ name, ...v }))
+        .sort((a, b) => (Number(b[s.vals[0]]) || 0) - (Number(a[s.vals[0]]) || 0)).slice(0, 8);
+      return { key, title: `${s.vals.join(" vs ")} by ${s.cat}`, empty: d.length === 0, node: (
+        <BarChart data={d}>{grid}
+          <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={60} /><YAxis tick={{ fontSize: 11 }} tickFormatter={formatNum} /><Tooltip {...tip} /><Legend wrapperStyle={{ fontSize: 11 }} />
+          {s.vals.map((nc, i) => <Bar key={nc} dataKey={nc} fill={P[(i + 3) % P.length]} radius={[4, 4, 0, 0]} />)}
+        </BarChart>) };
+    }
+    const d = aggregateBy(filteredRows, s.cat, s.val).slice(0, s.kind === "pie" ? 6 : 8);
+    if (s.kind === "pie") return { key, title: `${s.val} distribution by ${s.cat}`, empty: d.length === 0, node: (
+      <PieChart>
+        <Pie data={d} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={2}>
+          {d.map((_, i) => <Cell key={i} fill={P[i % P.length]} />)}
+        </Pie><Tooltip {...tip} /><Legend wrapperStyle={{ fontSize: 11 }} />
+      </PieChart>) };
+    if (s.kind === "hbar") return { key, title: `${s.val} by ${s.cat}`, empty: d.length === 0, node: (
+      <BarChart data={d} layout="vertical">{grid}
+        <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={formatNum} /><YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 10 }} /><Tooltip {...tip} />
+        <Bar dataKey="value" radius={[0, 6, 6, 0]}>{d.map((_, i) => <Cell key={i} fill={P[i % P.length]} />)}</Bar>
+      </BarChart>) };
+    return { key, title: `${s.val} by ${s.cat}`, empty: d.length === 0, node: (
+      <BarChart data={d}>{grid}
+        <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={60} /><YAxis tick={{ fontSize: 11 }} tickFormatter={formatNum} /><Tooltip {...tip} />
+        <Bar dataKey="value" radius={[6, 6, 0, 0]}>{d.map((_, i) => <Cell key={i} fill={P[(i + 2) % P.length]} />)}</Bar>
+      </BarChart>) };
+  };
+
+  const shown = specs.slice(0, chartCount).map(renderSpec);
 
   const filterCols = useMemo(() => cols.stringCols
     .map((c) => {
@@ -159,13 +230,19 @@ export default function AutoDashboard({ data }: Props) {
       const { default: html2canvas } = await import("html2canvas");
       const { default: jsPDF } = await import("jspdf");
       const canvas = await html2canvas(el, { backgroundColor: getComputedStyle(document.body).backgroundColor, scale: 2, useCORS: true });
-      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
-      const ratio = canvas.width / canvas.height;
-      let w = pageW - 10, h = w / ratio;
-      if (h > pageH - 10) { h = pageH - 10; w = h * ratio; }
-      pdf.addImage(canvas.toDataURL("image/png", 1.0), "PNG", (pageW - w) / 2, 5, w, h);
+      const w = pageW - 10;
+      const pxPerPage = Math.floor(canvas.width * ((pageH - 10) / w));
+      for (let y = 0, page = 0; y < canvas.height; y += pxPerPage, page++) {
+        const slice = document.createElement("canvas");
+        slice.width = canvas.width;
+        slice.height = Math.min(pxPerPage, canvas.height - y);
+        slice.getContext("2d")!.drawImage(canvas, 0, y, canvas.width, slice.height, 0, 0, canvas.width, slice.height);
+        if (page > 0) pdf.addPage();
+        pdf.addImage(slice.toDataURL("image/png", 1.0), "PNG", 5, 5, w, slice.height * (w / canvas.width));
+      }
       pdf.save("auto-dashboard.pdf");
       toast.success("Dashboard exported!", { id: "auto-pdf" });
     } catch {
@@ -173,68 +250,13 @@ export default function AutoDashboard({ data }: Props) {
     }
   };
 
-  const tip = { contentStyle: { background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 } };
-  const grid = <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />;
-
-  const charts: { key: string; title: string; wide?: boolean; node: JSX.Element }[] = [];
-  if (trendData && trendData.length > 1) charts.push({
-    key: "trend", title: `${cols.revenueCol} Trend`, wide: true,
-    node: (
-      <ComposedChart data={trendData}>{grid}
-        <XAxis dataKey="period" tick={{ fontSize: 11 }} /><YAxis tick={{ fontSize: 11 }} tickFormatter={formatNum} /><Tooltip {...tip} /><Legend wrapperStyle={{ fontSize: 11 }} />
-        <Bar dataKey="value" name={cols.revenueCol!} fill={P[0]} radius={[4, 4, 0, 0]} />
-        {cols.profitCol && cols.profitCol !== cols.revenueCol && <Line type="monotone" dataKey="value2" name={cols.profitCol} stroke={P[1]} strokeWidth={2.5} dot={{ r: 3 }} />}
-      </ComposedChart>
-    ),
-  });
-  if (barData) charts.push({
-    key: "bar", title: `${cols.revenueCol} by ${cols.categoryCol}`,
-    node: (
-      <BarChart data={barData} layout="vertical">{grid}
-        <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={formatNum} /><YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 10 }} /><Tooltip {...tip} />
-        <Bar dataKey="value" radius={[0, 6, 6, 0]}>{barData.map((_, i) => <Cell key={i} fill={P[i % P.length]} />)}</Bar>
-      </BarChart>
-    ),
-  });
-  if (pieData) charts.push({
-    key: "pie", title: `Distribution by ${pieCol}`,
-    node: (
-      <PieChart>
-        <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={2}>
-          {pieData.map((_, i) => <Cell key={i} fill={P[i % P.length]} />)}
-        </Pie><Tooltip {...tip} /><Legend wrapperStyle={{ fontSize: 11 }} />
-      </PieChart>
-    ),
-  });
-  if (trendData && trendData.length > 1) charts.push({
-    key: "area", title: `Cumulative ${cols.revenueCol}`,
-    node: (
-      <AreaChart data={trendData.reduce<{ period: string; value: number }[]>((acc, d) => { acc.push({ period: d.period, value: (acc.at(-1)?.value ?? 0) + d.value }); return acc; }, [])}>
-        <defs><linearGradient id="autoArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={P[2]} stopOpacity={0.5} /><stop offset="100%" stopColor={P[2]} stopOpacity={0.05} /></linearGradient></defs>
-        {grid}<XAxis dataKey="period" tick={{ fontSize: 11 }} /><YAxis tick={{ fontSize: 11 }} tickFormatter={formatNum} /><Tooltip {...tip} />
-        <Area type="monotone" dataKey="value" stroke={P[2]} strokeWidth={2.5} fill="url(#autoArea)" />
-      </AreaChart>
-    ),
-  });
-  if (compData) charts.push({
-    key: "comp", title: `${cols.numericCols.slice(0, 2).join(" vs ")} by ${cols.categoryCol}`,
-    node: (
-      <BarChart data={compData}>{grid}
-        <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={60} /><YAxis tick={{ fontSize: 11 }} tickFormatter={formatNum} /><Tooltip {...tip} /><Legend wrapperStyle={{ fontSize: 11 }} />
-        {cols.numericCols.slice(0, 2).map((nc, i) => <Bar key={nc} dataKey={nc} fill={P[(i + 3) % P.length]} radius={[4, 4, 0, 0]} />)}
-      </BarChart>
-    ),
-  });
-  if (secondBar && secondBar.rows.length > 1) charts.push({
-    key: "bar2", title: `${secondBar.val} by ${secondCatCol}`,
-    node: (
-      <BarChart data={secondBar.rows}>{grid}
-        <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={60} /><YAxis tick={{ fontSize: 11 }} tickFormatter={formatNum} /><Tooltip {...tip} />
-        <Bar dataKey="value" radius={[6, 6, 0, 0]}>{secondBar.rows.map((_, i) => <Cell key={i} fill={P[(i + 2) % P.length]} />)}</Bar>
-      </BarChart>
-    ),
-  });
-  const shown = charts.slice(0, chartCount);
+  // ---- User-built "More Charts" (rebuilt from filtered rows so slicers apply) ----
+  const customCharts = useMemo(
+    () => customSpecs.map((c) => buildAxisChart(data, filteredRows, c.x, c.y, c.type, c.id)),
+    [customSpecs, data, filteredRows],
+  );
+  const customKpis = customCharts.filter((c) => c.type === "kpi" || c.type === "card");
+  const customVisuals = customCharts.filter((c) => c.type !== "kpi" && c.type !== "card");
 
   const slicers = filterCols.length > 0 && (
     <Card className={layout === "sidebar" ? "h-fit lg:sticky lg:top-2" : ""}>

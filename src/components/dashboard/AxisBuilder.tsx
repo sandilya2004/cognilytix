@@ -24,6 +24,7 @@ const chartOptions: { value: ChartType; label: string }[] = [
   { value: "radar", label: "Radar" },
   { value: "funnel", label: "Funnel" },
   { value: "geo-map", label: "Geographic Map" },
+  { value: "kpi", label: "KPI Card" },
 ];
 
 export default function AxisBuilder({ columns, onCreateChart, presetType, onPresetConsumed }: AxisBuilderProps) {
