@@ -37,6 +37,10 @@ function formatNum(n: number): string {
   return n.toFixed(0);
 }
 
+function formatFull(n: number): string {
+  return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
 function detectColumns(data: ParsedData) {
   const numericCols = data.columns.filter((c) => c.type === "number").map((c) => c.name);
   const dateCols = data.columns.filter((c) => c.type === "date").map((c) => c.name);
@@ -76,6 +80,9 @@ export default function AutoDashboard({ data }: Props) {
   const [paletteName, setPaletteName] = useState(() => PALETTE_NAMES[Math.floor(Math.random() * PALETTE_NAMES.length)]);
   const [chartCount, setChartCount] = useState(5);
   const [layout, setLayout] = useState<Layout>("sidebar");
+  const [showBuilder, setShowBuilder] = useState(false);
+  const [pendingType, setPendingType] = useState<ChartType | null>(null);
+  const [customSpecs, setCustomSpecs] = useState<{ id: string; x: string[]; y: string[]; type: ChartType }[]>([]);
   const P = PALETTES[paletteName];
 
   const filteredRows = useMemo(() => {
@@ -88,10 +95,10 @@ export default function AutoDashboard({ data }: Props) {
 
   const kpis = useMemo(() => {
     const out: { label: string; value: string; icon: typeof DollarSign }[] = [];
-    if (cols.revenueCol) out.push({ label: `Total ${cols.revenueCol}`, value: formatNum(sum(cols.revenueCol)), icon: DollarSign });
+    if (cols.revenueCol) out.push({ label: `Total ${cols.revenueCol}`, value: formatFull(sum(cols.revenueCol)), icon: DollarSign });
     if (cols.profitCol && cols.profitCol !== cols.revenueCol) {
       const prof = sum(cols.profitCol);
-      out.push({ label: `Total ${cols.profitCol}`, value: formatNum(prof), icon: TrendingUp });
+      out.push({ label: `Total ${cols.profitCol}`, value: formatFull(prof), icon: TrendingUp });
       const rev = cols.revenueCol ? sum(cols.revenueCol) : 0;
       out.push({ label: "Profit Margin", value: `${rev > 0 ? ((prof / rev) * 100).toFixed(1) : "0"}%`, icon: Award });
     }
@@ -103,7 +110,7 @@ export default function AutoDashboard({ data }: Props) {
       const agg = aggregateBy(filteredRows, cols.productCol, cols.revenueCol);
       if (agg.length) out.push({ label: "Best " + cols.productCol, value: agg[0].name, icon: Package });
     }
-    out.push({ label: "Total Records", value: formatNum(filteredRows.length), icon: TrendingUp });
+    out.push({ label: "Total Records", value: formatFull(filteredRows.length), icon: TrendingUp });
     return out.slice(0, 5);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cols, filteredRows]);
