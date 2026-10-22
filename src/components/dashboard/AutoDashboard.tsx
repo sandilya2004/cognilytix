@@ -308,6 +308,11 @@ export default function AutoDashboard({ data }: Props) {
           </CardContent>
         </Card>
       ))}
+      {customVisuals.map((c, j) => (
+        <div key={c.id} className="rounded-lg overflow-hidden" style={{ borderTop: `3px solid ${P[(shown.length + j) % P.length]}` }}>
+          <ChartCard config={c} onRemove={(id) => setCustomSpecs((p) => p.filter((s) => s.id !== id))} />
+        </div>
+      ))}
     </div>
   );
 
@@ -416,16 +421,6 @@ export default function AutoDashboard({ data }: Props) {
         )}
         {shown.length < chartCount && (
           <p className="text-xs text-muted-foreground text-center">Your data supports {shown.length} automatic charts.</p>
-        )}
-        {customVisuals.length > 0 && (
-          <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-foreground">Your Charts</h3>
-            <div className="grid gap-4 md:grid-cols-2">
-              {customVisuals.map((c) => (
-                <ChartCard key={c.id} config={c} onRemove={(id) => setCustomSpecs((p) => p.filter((s) => s.id !== id))} />
-              ))}
-            </div>
-          </div>
         )}
         <Badge variant="outline" className="text-[10px]">Palette: {paletteName}</Badge>
       </div>
