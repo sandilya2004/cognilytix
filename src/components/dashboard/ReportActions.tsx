@@ -17,6 +17,7 @@ import { downloadExecutivePDF, type ReportPayload } from "@/lib/export-pdf";
 import { downloadExecutivePPTX } from "@/lib/export-pptx";
 import { generateSummary } from "@/lib/summarize";
 import { reportStore, withPanelsVisible } from "@/lib/report-store";
+import { calculateDatasetTotals } from "@/lib/report-data";
 
 interface Props {
   title: string;
@@ -42,7 +43,7 @@ async function fetchExecutiveSummary(payload: ReportPayload): Promise<AISummary>
     totalRows: payload.data?.rows.length ?? 0,
     columns: payload.data?.columns.map((c) => `${c.name}:${c.type}`) ?? [],
     sampleRows: payload.data?.rows.slice(0, 5) ?? [],
-    kpis: {},
+    kpis: payload.data ? calculateDatasetTotals(payload.data) : {},
     insights: payload.insights ?? [],
   };
   const { data, error } = await supabase.functions.invoke("executive-summary", { body });
