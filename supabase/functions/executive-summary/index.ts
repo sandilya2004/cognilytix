@@ -22,8 +22,10 @@ DATASET: ${fileName ?? "—"}
 TOTAL ROWS: ${totalRows ?? "?"}
 COLUMNS: ${(columns ?? []).join(", ")}
 
-KPIs:
+EXACT FULL-DATASET AGGREGATES (calculated across all rows; these are authoritative):
 ${JSON.stringify(kpis ?? {}, null, 2)}
+
+Use these aggregate totals as the source of truth. Sample rows are illustrative only; never calculate dataset totals, growth, or rankings from the sample rows.
 
 SAMPLE ROWS (first few):
 ${JSON.stringify(sampleRows ?? [], null, 2)}
