@@ -143,7 +143,7 @@ export default function AutoDashboard({ data }: Props) {
     let k = 0;
     for (const v of [primary, ...vals.filter((x) => x !== primary)]) {
       for (const c of ordered) {
-        if (out.some((s) => "cat" in s && s.cat === c && s.val === v)) continue;
+        if (out.some((s) => "val" in s && "cat" in s && s.cat === c && s.val === v)) continue;
         out.push({ kind: kinds[k++ % 3], cat: c, val: v });
       }
     }
