@@ -25,6 +25,7 @@ interface Props {
   data: ParsedData | null;
   charts: ChartConfig[];
   summaryText: string;
+  mode?: "toolbar" | "executive";
 }
 
 type AISummary = {
@@ -197,6 +198,17 @@ export default function ReportActions(props: Props) {
     }
   };
 
+  if (props.mode === "executive") {
+    return (
+      <div className="flex justify-end">
+        <Button variant="hero" size="sm" onClick={generateExecutiveReport} disabled={loadingExec || !props.data}>
+          {loadingExec ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
+          Generate Executive Report
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="flex items-center gap-1.5 flex-wrap">
@@ -206,14 +218,10 @@ export default function ReportActions(props: Props) {
         </Button>
         <Button variant="outline" size="sm" onClick={exportPPT} disabled={loadingPpt || !props.data}>
           {loadingPpt ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Presentation className="h-4 w-4 mr-1" />}
-          Export PowerPoint
+          Export PPT
         </Button>
         <Button variant="outline" size="sm" onClick={() => setShareOpen(true)} disabled={!props.data}>
           <Share2 className="h-4 w-4 mr-1" /> Share Report
-        </Button>
-        <Button variant="hero" size="sm" onClick={generateExecutiveReport} disabled={loadingExec || !props.data}>
-          {loadingExec ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
-          Generate Executive Report
         </Button>
       </div>
 

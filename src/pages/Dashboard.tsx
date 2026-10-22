@@ -222,9 +222,15 @@ export default function Dashboard() {
   }, []);
 
   const handleAxisCreate = useCallback(
-    (xKey: string, yKeys: string[], chartType: ChartType) => {
+    (xInput: string | string[], yKeys: string[], chartType: ChartType) => {
       if (!data) return;
       try {
+        const xKeys = Array.isArray(xInput) ? xInput : [xInput];
+        const multiX = xKeys.length > 1;
+        const xKey = multiX ? xKeys.join(" / ") : xKeys[0];
+        const rows = multiX
+          ? data.rows.map(r => ({ ...r, [xKey]: xKeys.map(k => String(r[k] ?? "Unknown")).join(" / ") }))
+          : data.rows;
         const agg = (rows: Record<string, unknown>[], gk: string, vk: string) => {
           const map = new Map<string, number>();
           for (const row of rows) {
@@ -235,14 +241,14 @@ export default function Dashboard() {
         };
 
         const stringCols = data.columns.filter(c => c.type === "string" || c.type === "date").map(c => c.name);
-        const isCategory = stringCols.includes(xKey);
+        const isCategory = multiX || stringCols.includes(xKey);
         let chartData: Record<string, unknown>[];
 
         if (isCategory && yKeys.length === 1) {
-          chartData = agg(data.rows, xKey, yKeys[0]);
+          chartData = agg(rows, xKey, yKeys[0]);
         } else if (isCategory && yKeys.length > 1) {
           const map = new Map<string, Record<string, number>>();
-          for (const row of data.rows) {
+          for (const row of rows) {
             const key = String(row[xKey] ?? "Unknown");
             if (!map.has(key)) map.set(key, {});
             const entry = map.get(key)!;
@@ -252,7 +258,7 @@ export default function Dashboard() {
           }
           chartData = Array.from(map.entries()).map(([k, v]) => ({ [xKey]: k, ...v }));
         } else {
-          chartData = data.rows.slice(0, 100);
+          chartData = rows.slice(0, 100);
         }
 
         if (chartType === "pie") chartData = chartData.slice(0, 10);
@@ -572,7 +578,8 @@ export default function Dashboard() {
         )}
         {/* AUTO DASHBOARD TAB */}
         {activeTab === "auto" && data && (
-          <div className="max-w-7xl mx-auto p-6">
+          <div className="max-w-7xl mx-auto p-6 space-y-4">
+            <ReportActions mode="executive" title={fileName.replace(/\.[^/.]+$/, "") || "Cognilytix Report"} fileName={fileName} data={data} charts={charts} summaryText={summaryText} />
             <AutoDashboard data={data} />
           </div>
         )}
@@ -590,6 +597,7 @@ export default function Dashboard() {
         )}
         {data && (
           <div data-tab-panel className={activeTab === "prediction-insights" ? "" : "hidden"}>
+            <div className="max-w-6xl mx-auto px-6 pt-4"><ReportActions mode="executive" title={fileName.replace(/\.[^/.]+$/, "") || "Cognilytix Report"} fileName={fileName} data={data} charts={charts} summaryText={summaryText} /></div>
             <PredictionInsightsPanel data={data} />
           </div>
         )}
