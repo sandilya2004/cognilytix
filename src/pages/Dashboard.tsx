@@ -578,7 +578,8 @@ export default function Dashboard() {
         )}
         {/* AUTO DASHBOARD TAB */}
         {activeTab === "auto" && data && (
-          <div className="max-w-7xl mx-auto p-6">
+          <div className="max-w-7xl mx-auto p-6 space-y-4">
+            <ReportActions mode="executive" title={fileName.replace(/\.[^/.]+$/, "") || "Cognilytix Report"} fileName={fileName} data={data} charts={charts} summaryText={summaryText} />
             <AutoDashboard data={data} />
           </div>
         )}
@@ -596,6 +597,7 @@ export default function Dashboard() {
         )}
         {data && (
           <div data-tab-panel className={activeTab === "prediction-insights" ? "" : "hidden"}>
+            <div className="max-w-6xl mx-auto px-6 pt-4"><ReportActions mode="executive" title={fileName.replace(/\.[^/.]+$/, "") || "Cognilytix Report"} fileName={fileName} data={data} charts={charts} summaryText={summaryText} /></div>
             <PredictionInsightsPanel data={data} />
           </div>
         )}
