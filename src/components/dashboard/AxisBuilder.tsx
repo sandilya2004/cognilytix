@@ -7,7 +7,7 @@ import type { ChartType } from "@/lib/chart-types";
 
 interface AxisBuilderProps {
   columns: DataColumn[];
-  onCreateChart: (xKey: string, yKeys: string[], chartType: ChartType) => void;
+  onCreateChart: (xKeys: string[], yKeys: string[], chartType: ChartType) => void;
   presetType?: ChartType | null;
   onPresetConsumed?: () => void;
 }
@@ -27,7 +27,7 @@ const chartOptions: { value: ChartType; label: string }[] = [
 ];
 
 export default function AxisBuilder({ columns, onCreateChart, presetType, onPresetConsumed }: AxisBuilderProps) {
-  const [xAxis, setXAxis] = useState<string | null>(null);
+  const [xAxes, setXAxes] = useState<string[]>([]);
   const [yAxes, setYAxes] = useState<string[]>([]);
   const [chartType, setChartType] = useState<ChartType>("bar");
   const [draggedCol, setDraggedCol] = useState<string | null>(null);
@@ -47,7 +47,7 @@ export default function AxisBuilder({ columns, onCreateChart, presetType, onPres
 
   const handleDropX = (e: React.DragEvent) => {
     e.preventDefault();
-    if (draggedCol) setXAxis(draggedCol);
+    if (draggedCol && !xAxes.includes(draggedCol)) setXAxes(prev => [...prev, draggedCol]);
     setDraggedCol(null);
   };
 
@@ -62,8 +62,8 @@ export default function AxisBuilder({ columns, onCreateChart, presetType, onPres
   const handleDragOver = (e: React.DragEvent) => e.preventDefault();
 
   const handleCreate = () => {
-    if (!xAxis || yAxes.length === 0) return;
-    onCreateChart(xAxis, yAxes, chartType);
+    if (xAxes.length === 0 || yAxes.length === 0) return;
+    onCreateChart(xAxes, yAxes, chartType);
   };
 
   const typeBadge: Record<string, string> = {
@@ -112,15 +112,19 @@ export default function AxisBuilder({ columns, onCreateChart, presetType, onPres
                 draggedCol ? "border-primary bg-primary/5" : "border-border"
               }`}
             >
-              {xAxis ? (
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="text-xs">{xAxis}</Badge>
-                  <button onClick={() => setXAxis(null)}>
-                    <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
-                  </button>
+              {xAxes.length > 0 ? (
+                <div className="flex flex-wrap justify-center gap-1.5">
+                  {xAxes.map(x => (
+                    <div key={x} className="flex items-center gap-1">
+                      <Badge variant="secondary" className="text-xs">{x}</Badge>
+                      <button onClick={() => setXAxes(prev => prev.filter(v => v !== x))}>
+                        <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               ) : (
-                <p className="text-xs text-muted-foreground">Drop column here</p>
+                <p className="text-xs text-muted-foreground">Drop column(s) here</p>
               )}
             </div>
           </div>
@@ -131,12 +135,12 @@ export default function AxisBuilder({ columns, onCreateChart, presetType, onPres
             <div
               onDrop={handleDropY}
               onDragOver={handleDragOver}
-              className={`min-h-[48px] rounded-md border-2 border-dashed p-2 transition-colors ${
+              className={`min-h-[48px] rounded-md border-2 border-dashed p-2 flex items-center justify-center transition-colors ${
                 draggedCol ? "border-primary bg-primary/5" : "border-border"
               }`}
             >
               {yAxes.length > 0 ? (
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap justify-center gap-1.5">
                   {yAxes.map(y => (
                     <div key={y} className="flex items-center gap-1">
                       <Badge variant="secondary" className="text-xs">{y}</Badge>
@@ -170,7 +174,7 @@ export default function AxisBuilder({ columns, onCreateChart, presetType, onPres
           <Button
             className="w-full"
             size="sm"
-            disabled={!xAxis || yAxes.length === 0}
+            disabled={xAxes.length === 0 || yAxes.length === 0}
             onClick={handleCreate}
           >
             <ArrowRight className="h-3.5 w-3.5 mr-1.5" />
