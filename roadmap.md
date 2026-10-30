@@ -5,6 +5,6 @@
 - [x] Automatically open right-side visualization and axis tools on Dashboard; show connected dataset blocks.
 - [x] Verify workbook selection, drag/drop chart creation, sidebar reopening, and screen fit.
 - [ ] Match the Pinterest image precisely (blocked reference; needs uploaded image).
-- [ ] Automatically add more Auto Dashboard charts and expand individual charts.
-- [ ] Restore dark theme and reset all dataset-specific state on replacement.
-- [ ] Verify multiple datasets, chart expansion, automatic additions, and theme switching.
+- [x] Automatically add more Auto Dashboard charts and expand individual charts.
+- [x] Restore dark theme and reset all dataset-specific state on replacement.
+- [x] Verify multiple datasets, chart expansion, automatic additions, and theme switching.
