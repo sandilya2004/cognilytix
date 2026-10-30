@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import ReportActions from "@/components/dashboard/ReportActions";
 import FileUpload from "@/components/dashboard/FileUpload";
+import DataHandlingNotice from "@/components/dashboard/DataHandlingNotice";
 import PromptBar from "@/components/dashboard/PromptBar";
 import ChatPanel, { type ChatMessage } from "@/components/dashboard/ChatPanel";
 import ChartCard from "@/components/dashboard/ChartCard";
@@ -507,6 +508,7 @@ export default function Dashboard() {
                 setSheetSelectorOpen(true);
               }}
             />
+            <DataHandlingNotice />
           </div>
         )}
 
