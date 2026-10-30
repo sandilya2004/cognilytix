@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Palette, Shuffle, Plus, X, Hash } from "lucide-react";
+import { Palette, Shuffle, Plus, X, Hash, Maximize2 } from "lucide-react";
 import { TrendingUp, DollarSign, Award, MapPin, Package, FileDown } from "lucide-react";
 import VisualPicker from "@/components/dashboard/VisualPicker";
 import AxisBuilder from "@/components/dashboard/AxisBuilder";
@@ -8,6 +8,8 @@ import { buildAxisChart } from "@/lib/axis-chart";
 import type { ChartType } from "@/lib/chart-types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { buildAutomaticPlan, nextAutomaticCount, RECORD_COUNT, ROW_CATEGORY, type AutomaticSpec } from "@/lib/automatic-chart-plan";
 import { Badge } from "@/components/ui/badge";
 import {
   ResponsiveContainer, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area, ComposedChart,
@@ -81,6 +83,7 @@ export default function AutoDashboard({ data }: Props) {
   const [chartCount, setChartCount] = useState(5);
   const [layout, setLayout] = useState<Layout>("sidebar");
   const [showBuilder, setShowBuilder] = useState(false);
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [pendingType, setPendingType] = useState<ChartType | null>(null);
   const [customSpecs, setCustomSpecs] = useState<{ id: string; x: string[]; y: string[]; type: ChartType }[]>([]);
   const P = PALETTES[paletteName];
@@ -115,41 +118,10 @@ export default function AutoDashboard({ data }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cols, filteredRows]);
 
-  // Chart plan is decided from the full dataset so slicers never remove charts.
-  type Spec =
-    | { kind: "trend"; val: string; val2: string | null }
-    | { kind: "cumulative"; val: string }
-    | { kind: "hbar" | "vbar" | "pie"; cat: string; val: string }
-    | { kind: "comp"; cat: string; vals: string[] };
-  const specs = useMemo<Spec[]>(() => {
-    const measures = cols.numericCols.filter((n) => !/(^|[\s_-])id$|^id$|code|zip|postal|phone|year/i.test(n));
-    const vals = measures.length ? measures : cols.numericCols;
-    const primary = cols.revenueCol && vals.includes(cols.revenueCol) ? cols.revenueCol : vals[0];
-    if (!primary) return [];
-    const second = cols.profitCol && cols.profitCol !== primary && vals.includes(cols.profitCol) ? cols.profitCol : vals.find((v) => v !== primary) ?? null;
-    const cats = cols.stringCols.filter((c) => {
-      const n = new Set(data.rows.map((r) => String(r[c] ?? ""))).size;
-      return n >= 2 && n <= 60;
-    });
-    const ordered = [cols.categoryCol, cols.regionCol, ...cats].filter((c, i, a): c is string => !!c && cats.includes(c) && a.indexOf(c) === i);
-    const out: Spec[] = [];
-    if (cols.dateCols[0]) out.push({ kind: "trend", val: primary, val2: second });
-    if (ordered[0]) out.push({ kind: "hbar", cat: ordered[0], val: primary });
-    if (ordered[1]) out.push({ kind: "pie", cat: ordered[1], val: primary });
-    if (second && ordered[0]) out.push({ kind: "comp", cat: ordered[0], vals: [primary, second] });
-    if (cols.dateCols[0]) out.push({ kind: "cumulative", val: primary });
-    // Fill remaining slots with every category × measure combination
-    const kinds: ("vbar" | "pie" | "hbar")[] = ["vbar", "pie", "hbar"];
-    let k = 0;
-    for (const v of [primary, ...vals.filter((x) => x !== primary)]) {
-      for (const c of ordered) {
-        if (out.some((s) => "val" in s && "cat" in s && s.cat === c && s.val === v)) continue;
-        out.push({ kind: kinds[k++ % 3], cat: c, val: v });
-      }
-    }
-    if (second && !out.some((s) => s.kind === "comp")) out.push({ kind: "comp", cat: ordered[0] ?? primary, vals: [primary, second] });
-    return out;
-  }, [cols, data.rows]);
+  // Plan from the full dataset; slicers never change the available chart slots.
+  const specs = useMemo(() => buildAutomaticPlan(data), [data]);
+  const valueOf = (row: Record<string, unknown>, key: string) => key === RECORD_COUNT ? 1 : (Number(row[key]) || 0);
+  const chartRows = filteredRows.map((row, index) => ({ ...row, [RECORD_COUNT]: 1, [ROW_CATEGORY]: String(index + 1) }));
 
   const trendOf = (val: string, val2: string | null) => {
     const map = new Map<string, { value: number; value2: number }>();
@@ -159,8 +131,8 @@ export default function AutoDashboard({ data }: Props) {
       const d = new Date(String(raw));
       const key = isNaN(d.getTime()) ? String(raw) : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       const e = map.get(key) || { value: 0, value2: 0 };
-      e.value += Number(r[val]) || 0;
-      if (val2) e.value2 += Number(r[val2]) || 0;
+      e.value += valueOf(r, val);
+      if (val2) e.value2 += valueOf(r, val2);
       map.set(key, e);
     }
     return Array.from(map.entries()).map(([period, v]) => ({ period, ...v })).sort((a, b) => a.period.localeCompare(b.period));
@@ -169,12 +141,12 @@ export default function AutoDashboard({ data }: Props) {
   const tip = { contentStyle: { background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 } };
   const grid = <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />;
 
-  const renderSpec = (s: Spec, idx: number): { key: string; title: string; wide?: boolean; empty: boolean; node: JSX.Element } => {
+  const renderSpec = (s: AutomaticSpec, idx: number, expanded = false): { key: string; title: string; wide?: boolean; empty: boolean; node: JSX.Element } => {
     const key = `${s.kind}-${idx}`;
     if (s.kind === "trend") {
       const d = trendOf(s.val, s.val2);
       return { key, title: `${s.val} Trend`, wide: true, empty: d.length === 0, node: (
-        <ComposedChart data={d}>{grid}
+        <ComposedChart data={d} margin={{ top: 12, right: 24, bottom: 12, left: 8 }}>{grid}
           <XAxis dataKey="period" tick={{ fontSize: 11 }} /><YAxis tick={{ fontSize: 11 }} tickFormatter={formatNum} /><Tooltip {...tip} /><Legend wrapperStyle={{ fontSize: 11 }} />
           <Bar dataKey="value" name={s.val} fill={P[0]} radius={[4, 4, 0, 0]} />
           {s.val2 && <Line type="monotone" dataKey="value2" name={s.val2} stroke={P[1]} strokeWidth={2.5} dot={{ r: 3 }} />}
@@ -183,15 +155,15 @@ export default function AutoDashboard({ data }: Props) {
     if (s.kind === "cumulative") {
       const d = trendOf(s.val, null).reduce<{ period: string; value: number }[]>((acc, x) => { acc.push({ period: x.period, value: (acc.at(-1)?.value ?? 0) + x.value }); return acc; }, []);
       return { key, title: `Cumulative ${s.val}`, empty: d.length === 0, node: (
-        <AreaChart data={d}>
-          <defs><linearGradient id={`autoArea${idx}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={P[2]} stopOpacity={0.5} /><stop offset="100%" stopColor={P[2]} stopOpacity={0.05} /></linearGradient></defs>
+        <AreaChart data={d} margin={{ top: 12, right: 24, bottom: 12, left: 8 }}>
+          <defs><linearGradient id={`autoArea${idx}${expanded ? "Expanded" : ""}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={P[2]} stopOpacity={0.5} /><stop offset="100%" stopColor={P[2]} stopOpacity={0.05} /></linearGradient></defs>
           {grid}<XAxis dataKey="period" tick={{ fontSize: 11 }} /><YAxis tick={{ fontSize: 11 }} tickFormatter={formatNum} /><Tooltip {...tip} />
-          <Area type="monotone" dataKey="value" stroke={P[2]} strokeWidth={2.5} fill={`url(#autoArea${idx})`} />
+          <Area type="monotone" dataKey="value" stroke={P[2]} strokeWidth={2.5} fill={`url(#autoArea${idx}${expanded ? "Expanded" : ""})`} />
         </AreaChart>) };
     }
     if (s.kind === "comp") {
       const map = new Map<string, Record<string, number>>();
-      for (const r of filteredRows) {
+      for (const r of chartRows) {
         const k = String(r[s.cat] ?? "Unknown");
         const e = map.get(k) || {};
         for (const nc of s.vals) e[nc] = (e[nc] || 0) + (Number(r[nc]) || 0);
@@ -200,31 +172,31 @@ export default function AutoDashboard({ data }: Props) {
       const d = Array.from(map.entries()).map(([name, v]) => ({ name, ...v }))
         .sort((a, b) => (Number(b[s.vals[0]]) || 0) - (Number(a[s.vals[0]]) || 0)).slice(0, 8);
       return { key, title: `${s.vals.join(" vs ")} by ${s.cat}`, empty: d.length === 0, node: (
-        <BarChart data={d}>{grid}
+        <BarChart data={d} margin={{ top: 12, right: 24, bottom: 18, left: 8 }}>{grid}
           <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={60} /><YAxis tick={{ fontSize: 11 }} tickFormatter={formatNum} /><Tooltip {...tip} /><Legend wrapperStyle={{ fontSize: 11 }} />
           {s.vals.map((nc, i) => <Bar key={nc} dataKey={nc} fill={P[(i + 3) % P.length]} radius={[4, 4, 0, 0]} />)}
         </BarChart>) };
     }
-    const d = aggregateBy(filteredRows, s.cat, s.val).slice(0, s.kind === "pie" ? 6 : 8);
+    const d = aggregateBy(chartRows, s.cat, s.val).slice(0, s.kind === "pie" ? 6 : 8);
     if (s.kind === "pie") return { key, title: `${s.val} distribution by ${s.cat}`, empty: d.length === 0, node: (
       <PieChart>
-        <Pie data={d} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={2}>
+        <Pie data={d} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={expanded ? "38%" : "32%"} outerRadius={expanded ? "65%" : "58%"} paddingAngle={2}>
           {d.map((_, i) => <Cell key={i} fill={P[i % P.length]} />)}
         </Pie><Tooltip {...tip} /><Legend wrapperStyle={{ fontSize: 11 }} />
       </PieChart>) };
     if (s.kind === "hbar") return { key, title: `${s.val} by ${s.cat}`, empty: d.length === 0, node: (
-      <BarChart data={d} layout="vertical">{grid}
-        <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={formatNum} /><YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 10 }} /><Tooltip {...tip} />
+      <BarChart data={d} layout="vertical" margin={{ top: 12, right: 24, bottom: 12, left: 8 }}>{grid}
+        <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={formatNum} /><YAxis type="category" dataKey="name" width={expanded ? 160 : 100} tick={{ fontSize: 10 }} tickFormatter={(v: string) => !expanded && String(v).length > 16 ? `${String(v).slice(0, 15)}…` : String(v)} /><Tooltip {...tip} />
         <Bar dataKey="value" radius={[0, 6, 6, 0]}>{d.map((_, i) => <Cell key={i} fill={P[i % P.length]} />)}</Bar>
       </BarChart>) };
     return { key, title: `${s.val} by ${s.cat}`, empty: d.length === 0, node: (
-      <BarChart data={d}>{grid}
+      <BarChart data={d} margin={{ top: 12, right: 24, bottom: 18, left: 8 }}>{grid}
         <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={60} /><YAxis tick={{ fontSize: 11 }} tickFormatter={formatNum} /><Tooltip {...tip} />
         <Bar dataKey="value" radius={[6, 6, 0, 0]}>{d.map((_, i) => <Cell key={i} fill={P[(i + 2) % P.length]} />)}</Bar>
       </BarChart>) };
   };
 
-  const shown = specs.slice(0, chartCount).map(renderSpec);
+  const shown = specs.slice(0, chartCount).map((s, i) => renderSpec(s, i));
 
   const filterCols = useMemo(() => cols.stringCols
     .map((c) => {
@@ -251,7 +223,9 @@ export default function AutoDashboard({ data }: Props) {
         const slice = document.createElement("canvas");
         slice.width = canvas.width;
         slice.height = Math.min(pxPerPage, canvas.height - y);
-        slice.getContext("2d")!.drawImage(canvas, 0, y, canvas.width, slice.height, 0, 0, canvas.width, slice.height);
+        const context = slice.getContext("2d");
+        if (!context) throw new Error("Could not render PDF page");
+        context.drawImage(canvas, 0, y, canvas.width, slice.height, 0, 0, canvas.width, slice.height);
         if (page > 0) pdf.addPage();
         pdf.addImage(slice.toDataURL("image/png", 1.0), "PNG", 5, 5, w, slice.height * (w / canvas.width));
       }
@@ -276,8 +250,8 @@ export default function AutoDashboard({ data }: Props) {
       <CardContent className={layout === "sidebar" ? "flex flex-col gap-3" : "flex flex-wrap gap-3"}>
         {filterCols.map((f) => (
           <div key={f.name} className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground">{f.name}</label>
-            <select
+            <label htmlFor={`auto-filter-${f.name}`} className="text-xs font-medium text-muted-foreground">{f.name}</label>
+            <select id={`auto-filter-${f.name}`}
               value={filters[f.name] ?? "__all__"}
               onChange={(e) => setFilters((prev) => ({ ...prev, [f.name]: e.target.value }))}
               className="h-8 rounded-md border border-input bg-background px-2 text-sm min-w-[140px]"
@@ -295,21 +269,25 @@ export default function AutoDashboard({ data }: Props) {
   );
 
   const chartGrid = (
-    <div className={layout === "stacked" ? "grid gap-4" : "grid gap-4 md:grid-cols-2 xl:grid-cols-3"}>
+    <div className={layout === "stacked" ? "grid min-w-0 gap-4" : "grid min-w-0 gap-4 xl:grid-cols-2"}>
       {shown.map((c, i) => (
-        <Card key={c.key} className={layout !== "stacked" && c.wide && i === 0 ? "md:col-span-2" : ""} style={{ borderTop: `3px solid ${P[i % P.length]}` }}>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">{c.title}</CardTitle></CardHeader>
+        <Card key={c.key} data-auto-chart className={`min-w-0 ${layout !== "stacked" && c.wide && i === 0 ? "xl:col-span-2" : ""}`} style={{ borderTop: `3px solid ${P[i % P.length]}` }}>
+          <CardHeader className="pb-2 flex flex-row items-start justify-between gap-2">
+            <CardTitle className="text-sm leading-snug break-words min-w-0">{c.title}</CardTitle>
+            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" aria-label={`Expand ${c.title}`} title="Expand chart" onClick={() => setExpandedKey(c.key)}><Maximize2 className="h-4 w-4" /></Button>
+          </CardHeader>
           <CardContent>
             {c.empty ? (
               <div className="h-[260px] flex items-center justify-center text-sm text-muted-foreground">No rows match the selected slicers.</div>
             ) : (
-              <ResponsiveContainer width="100%" height={260}>{c.node}</ResponsiveContainer>
+              <ResponsiveContainer width="100%" height={320}>{c.node}</ResponsiveContainer>
             )}
           </CardContent>
         </Card>
       ))}
       {customVisuals.map((c, j) => (
-        <div key={c.id} className="rounded-lg overflow-hidden" style={{ borderTop: `3px solid ${P[(shown.length + j) % P.length]}` }}>
+        <div key={c.id} data-auto-chart className="relative min-w-0 rounded-lg" style={{ borderTop: `3px solid ${P[(shown.length + j) % P.length]}` }}>
+          <Button variant="outline" size="icon" className="absolute bottom-3 right-3 z-10 h-8 w-8" aria-label={`Expand ${c.title}`} title="Expand chart" onClick={() => setExpandedKey(c.id)}><Maximize2 className="h-4 w-4" /></Button>
           <ChartCard config={c} onRemove={(id) => setCustomSpecs((p) => p.filter((s) => s.id !== id))} />
         </div>
       ))}
@@ -363,14 +341,17 @@ export default function AutoDashboard({ data }: Props) {
         </CardContent>
       </Card>
 
-      <div className="flex justify-end">
-        <Button size="sm" variant={showBuilder ? "default" : "outline"} onClick={() => setShowBuilder((v) => !v)}>
+      <div className="flex justify-end items-center flex-wrap gap-2">
+        <Badge variant="outline">{shown.length} automatic charts</Badge>
+        <Button size="sm" variant="outline" disabled={chartCount >= specs.length} onClick={() => setChartCount(current => nextAutomaticCount(current, specs.length))}>
           <Plus className="h-4 w-4 mr-1" /> More Charts
+        </Button>
+        <Button size="sm" variant={showBuilder ? "default" : "outline"} onClick={() => setShowBuilder((v) => !v)}>
+          <Plus className="h-4 w-4 mr-1" /> Build Custom Chart
         </Button>
       </div>
       {showBuilder && (
         <div className="space-y-3">
-          <p className="text-xs text-muted-foreground">1. Pick a visual (or “KPI Card”). 2. Drag columns into the X and Y boxes. 3. Click Create — it is added to this dashboard and the PDF.</p>
           <VisualPicker onSelect={(t) => setPendingType(t)} />
           <AxisBuilder
             columns={data.columns}
@@ -424,6 +405,21 @@ export default function AutoDashboard({ data }: Props) {
         )}
         <Badge variant="outline" className="text-[10px]">Palette: {paletteName}</Badge>
       </div>
+      <Dialog open={expandedKey !== null} onOpenChange={open => { if (!open) setExpandedKey(null); }}>
+        <DialogContent className="w-[calc(100%-24px)] max-w-6xl max-h-[90dvh] overflow-y-auto" aria-describedby={undefined}>
+          <DialogHeader><DialogTitle className="pr-8 leading-snug">{shown.find(c => c.key === expandedKey)?.title ?? customVisuals.find(c => c.id === expandedKey)?.title ?? "Chart"}</DialogTitle></DialogHeader>
+          {(() => {
+            const index = shown.findIndex(c => c.key === expandedKey);
+            const spec = specs[index];
+            if (spec && index >= 0) {
+              const chart = renderSpec(spec, index, true);
+              return chart.empty ? <p className="py-12 text-muted-foreground">No rows match the selected slicers.</p> : <ResponsiveContainer width="100%" height={Math.max(260, Math.min(650, window.innerHeight * 0.65))}>{chart.node}</ResponsiveContainer>;
+            }
+            const chart = customVisuals.find(c => c.id === expandedKey);
+            return chart ? <ChartCard config={chart} chartHeight={Math.max(260, Math.min(650, window.innerHeight * 0.6))} onRemove={id => { setCustomSpecs(p => p.filter(s => s.id !== id)); setExpandedKey(null); }} /> : null;
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
