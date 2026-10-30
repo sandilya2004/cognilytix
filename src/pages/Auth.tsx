@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { z } from "zod";
+import { oauthReturnPath } from "@/lib/oauth-return-path";
 import { Brain, Mail, Lock, User as UserIcon, Shield, Loader2, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +46,8 @@ export default function Auth() {
   const navigate = useNavigate();
   const location = useLocation();
   const { session, role, loading: authLoading } = useAuth();
+  const rawNext = new URLSearchParams(location.search).get("next");
+  const nextPath = rawNext ? oauthReturnPath(rawNext) : null;
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("cognilytix_dark") === "true");
 
   useEffect(() => {
@@ -56,10 +59,11 @@ export default function Auth() {
   useEffect(() => {
     if (!authLoading && session && role) {
       const from = (location.state as { from?: string } | null)?.from;
-      if (role === "admin") navigate("/admin", { replace: true });
+      if (nextPath) navigate(nextPath, { replace: true });
+      else if (role === "admin") navigate("/admin", { replace: true });
       else navigate(from && from !== "/auth" ? from : "/dashboard", { replace: true });
     }
-  }, [session, role, authLoading, navigate, location.state]);
+  }, [session, role, authLoading, navigate, location.state, nextPath]);
 
   // ── Admin state ──
   const [adminUserId, setAdminUserId] = useState("");
@@ -136,7 +140,7 @@ export default function Auth() {
         email: parsed.data.email,
         password: parsed.data.password,
         options: {
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: nextPath ? new URL(nextPath, window.location.origin).href : window.location.origin,
           data: { display_name: parsed.data.name, name: parsed.data.name },
         },
       });
@@ -146,7 +150,7 @@ export default function Auth() {
       }
       if (data.session) {
         toast.success("Account created — welcome!");
-        navigate("/dashboard", { replace: true });
+        navigate(nextPath ?? "/dashboard", { replace: true });
       } else {
         toast.success("Account created! You can now sign in.");
         setMode("login");
@@ -182,7 +186,7 @@ export default function Auth() {
         return;
       }
       toast.success("Welcome back!");
-      navigate("/dashboard", { replace: true });
+      navigate(nextPath ?? "/dashboard", { replace: true });
     } catch (err) {
       setUserError("Login failed");
     } finally {
@@ -195,7 +199,7 @@ export default function Auth() {
     setUserLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin + "/auth",
+        redirect_uri: nextPath ? new URL(nextPath, window.location.origin).href : window.location.origin + "/auth",
       });
       if (result.error) {
         setUserError("Google sign-in failed");
@@ -204,7 +208,7 @@ export default function Auth() {
       }
       if (result.redirected) return;
       // Tokens already set
-      navigate("/dashboard", { replace: true });
+      navigate(nextPath ?? "/dashboard", { replace: true });
     } catch {
       setUserError("Google sign-in failed");
       setUserLoading(false);
