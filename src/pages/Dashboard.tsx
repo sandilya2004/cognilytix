@@ -418,6 +418,9 @@ export default function Dashboard() {
             <Button variant="ghost" size="sm" onClick={() => navigate("/projects")}>
               <FolderOpen className="h-4 w-4 mr-1" /> Projects
             </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/account/subscription")}>
+              Subscription
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => navigate("/reports")}>
               <FileText className="h-4 w-4 mr-1" /> Reports
             </Button>

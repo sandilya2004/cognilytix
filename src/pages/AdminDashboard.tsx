@@ -1,3 +1,5 @@
+import SubscriptionAdmin from "@/components/admin/SubscriptionAdmin";
+import { CreditCard } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -46,7 +48,7 @@ interface PendingRequest {
 const INACTIVE_DAYS = 60;
 const LOW_DAYS = 30;
 
-type Section = "overview" | "users" | "requests" | "activity" | "settings";
+type Section = "overview" | "users" | "requests" | "activity" | "subscriptions" | "settings";
 
 function daysSince(iso: string | null): number | null {
   if (!iso) return null;
@@ -66,6 +68,7 @@ const NAV_ITEMS: { id: Section; label: string; icon: typeof LayoutDashboard }[] 
   { id: "users", label: "Users", icon: Users },
   { id: "requests", label: "Requests", icon: Inbox },
   { id: "activity", label: "Activity", icon: Activity },
+  { id: "subscriptions", label: "Subscriptions", icon: CreditCard },
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
 
@@ -271,6 +274,7 @@ export default function AdminDashboard() {
               {section === "users" && "Manage all platform accounts"}
               {section === "requests" && "Approve or reject access requests"}
               {section === "activity" && "Track user engagement"}
+              {section === "subscriptions" && "Plans, limits, preview mode and manual assignments"}
               {section === "settings" && "Admin tools and credentials"}
             </p>
           </div>
@@ -284,6 +288,7 @@ export default function AdminDashboard() {
 
         <div className="p-6 space-y-6">
           {/* OVERVIEW */}
+          {section === "subscriptions" && <SubscriptionAdmin />}
           {section === "overview" && (
             <>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">

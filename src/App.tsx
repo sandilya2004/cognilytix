@@ -18,6 +18,8 @@ import Demo from "./pages/Demo";
 import OAuthConsent from "./pages/OAuthConsent";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import Refunds from "./pages/Refunds";
+import Subscription from "./pages/Subscription";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +35,8 @@ const App = () => (
             <Route path="/" element={<LandingPage />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
+            <Route path="/refunds" element={<Refunds />} />
+            <Route path="/account/subscription" element={<ProtectedRoute requireRole="user"><Subscription /></ProtectedRoute>} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/demo" element={<Demo />} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />

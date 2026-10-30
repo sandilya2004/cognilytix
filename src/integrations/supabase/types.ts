@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          id: boolean
+          preview_mode: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: boolean
+          preview_mode?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: boolean
+          preview_mode?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       pending_requests: {
         Row: {
           created_at: string
@@ -47,6 +68,39 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
+        }
+        Relationships: []
+      }
+      plan_limits: {
+        Row: {
+          analyses_per_month: number | null
+          max_upload_mb: number
+          name: string
+          plan_id: string
+          saved_dashboards: number | null
+          sort_order: number
+          team_members: number
+          updated_at: string
+        }
+        Insert: {
+          analyses_per_month?: number | null
+          max_upload_mb: number
+          name: string
+          plan_id: string
+          saved_dashboards?: number | null
+          sort_order?: number
+          team_members?: number
+          updated_at?: string
+        }
+        Update: {
+          analyses_per_month?: number | null
+          max_upload_mb?: number
+          name?: string
+          plan_id?: string
+          saved_dashboards?: number | null
+          sort_order?: number
+          team_members?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -116,6 +170,137 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          details: Json | null
+          id: string
+          target_user_id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_user_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_user_id?: string
+        }
+        Relationships: []
+      }
+      subscription_overrides: {
+        Row: {
+          plan_id: string
+          reason: string | null
+          set_by: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          plan_id: string
+          reason?: string | null
+          set_by?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          plan_id?: string
+          reason?: string | null
+          set_by?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_overrides_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plan_limits"
+            referencedColumns: ["plan_id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          environment: string
+          id: string
+          paddle_customer_id: string
+          paddle_subscription_id: string
+          price_id: string
+          product_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          environment?: string
+          id?: string
+          paddle_customer_id: string
+          paddle_subscription_id: string
+          price_id: string
+          product_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          environment?: string
+          id?: string
+          paddle_customer_id?: string
+          paddle_subscription_id?: string
+          price_id?: string
+          product_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      usage_events: {
+        Row: {
+          created_at: string
+          feature: string | null
+          id: string
+          kind: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          feature?: string | null
+          id?: string
+          kind?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          feature?: string | null
+          id?: string
+          kind?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -142,6 +327,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_set_plan: {
+        Args: { _email: string; _plan_id: string; _reason: string }
+        Returns: undefined
+      }
+      admin_subscription_summary: { Args: { _env?: string }; Returns: Json }
+      get_entitlements: {
+        Args: { _env?: string; _user_id: string }
+        Returns: Json
+      }
+      get_my_entitlements: { Args: { _env?: string }; Returns: Json }
       get_registered_user_count: { Args: never; Returns: number }
       has_role: {
         Args: {

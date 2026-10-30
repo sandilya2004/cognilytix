@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowRight, Brain, Check, FileText, HelpCircle, Moon, Sparkles, Sun, Users } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowRight, Check, Clock, FileText, HelpCircle, Moon, Sparkles, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
+import { CheckoutDialog } from "@/components/CheckoutDialog";
+import { getPaddleEnvironment } from "@/lib/paddle";
+import { PLANS, annualSavingsPercent, formatInr, type BillingCycle, type Plan } from "@/lib/plans";
 
 const faqs = [
   {
@@ -35,23 +40,43 @@ const faqs = [
     answer: "Reset clears the current file from the dashboard. Delete saved projects on the Projects page and shared reports on the Reports page. Clearing your browser data also removes locally saved projects. Expired share links stop opening, but their stored snapshots are not automatically deleted. Account deletion procedures and provider retention terms require owner confirmation in the Privacy Policy.",
   },
   {
-    question: "What is available during preview, and what comes next?",
-    answer: "Full access is available during preview. Paid plans for team collaboration are planned for the future, not available subscriptions today. Prices, billing cycles, subscription benefits and launch timing have not been announced.",
+    question: "How do payments, taxes and refunds work?",
+    answer: "Payments are processed by Paddle.com, our merchant of record, which includes GST or VAT where required and shows the tax breakdown and final total before you pay. You can pay by card, Google Pay and other local methods where available. You can cancel any time from your Subscription page, and request a refund within 14 days of purchase.",
   },
 ];
 
 export default function Pricing() {
   const { session, role } = useAuth();
+  const navigate = useNavigate();
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("cognilytix_dark") === "true");
+  const [cycle, setCycle] = useState<BillingCycle>("monthly");
+  const [selected, setSelected] = useState<Plan | null>(null);
+  const [previewMode, setPreviewMode] = useState(true);
+  const [currentPlan, setCurrentPlan] = useState<string | null>(null);
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
     localStorage.setItem("cognilytix_dark", String(darkMode));
-    window.scrollTo(0, 0);
   }, [darkMode]);
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+  useEffect(() => {
+    supabase.from("app_settings").select("preview_mode").eq("id", true).maybeSingle().then(({ data }) => setPreviewMode(data?.preview_mode ?? true));
+  }, []);
+  useEffect(() => {
+    if (!session) { setCurrentPlan(null); return; }
+    supabase.rpc("get_my_entitlements", { _env: getPaddleEnvironment() }).then(({ data }) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setCurrentPlan((data as any)?.plan_id ?? null);
+    });
+  }, [session]);
   const startHref = session ? (role === "admin" ? "/admin-dashboard" : "/dashboard") : "/auth?mode=signup";
+  const choose = (plan: Plan) => {
+    if (!session) { navigate(`/auth?mode=signup&next=${encodeURIComponent("/pricing")}`); return; }
+    setSelected(plan);
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <PaymentTestModeBanner />
       <nav className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-sm" aria-label="Main navigation">
         <div className="container flex min-h-16 flex-wrap items-center justify-between gap-3 py-3">
           <Link to="/" className="flex items-center gap-2 font-semibold">
@@ -68,43 +93,60 @@ export default function Pricing() {
       </nav>
 
       <main>
-        <section className="container max-w-5xl pb-12 pt-14 sm:pt-20">
-          <header className="mb-10 max-w-2xl space-y-4">
-            <p className="flex items-center gap-2 text-sm font-medium text-primary"><Sparkles className="h-4 w-4" /> Current product status</p>
-            <h1 className="text-3xl font-bold sm:text-4xl">Pricing & FAQ</h1>
-            <p className="text-lg leading-relaxed text-muted-foreground">Full access to Cognilytix AI during preview. Paid team collaboration plans are planned for the future.</p>
+        <section className="container max-w-7xl pb-12 pt-14 sm:pt-20">
+          <header className="mx-auto mb-8 max-w-2xl space-y-4 text-center">
+            <p className="flex items-center justify-center gap-2 text-sm font-medium text-primary"><Sparkles className="h-4 w-4" /> Plans and pricing</p>
+            <h1 className="text-3xl font-bold sm:text-4xl">Choose the plan that fits your analysis</h1>
+            <p className="text-lg leading-relaxed text-muted-foreground">Prices in Indian rupees, including applicable GST or VAT. The tax breakdown and final total are shown at checkout before you pay.</p>
+            {previewMode && (
+              <p className="rounded-md border border-primary/30 bg-primary/5 px-4 py-2 text-sm">Cognilytix is in preview: everyone currently keeps full access, and no automatic charges happen unless you choose to subscribe.</p>
+            )}
           </header>
 
-          <div className="grid gap-6 md:grid-cols-2">
-            <article className="flex flex-col rounded-lg border border-primary/40 bg-card p-6 sm:p-8">
-              <div className="mb-5 flex items-center justify-between gap-3">
-                <Sparkles className="h-6 w-6 text-primary" />
-                <span className="text-xs font-semibold text-accent">AVAILABLE NOW</span>
-              </div>
-              <h2 className="text-2xl font-semibold">Preview access</h2>
-              <p className="mt-2 text-lg font-medium text-primary">Full access during preview</p>
-              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Explore the current product with your spreadsheets.</p>
-              <ul className="my-6 space-y-3 text-sm">
-                {["CSV and Excel uploads with data health checks", "Dashboards and chart-building tools", "AI insights, stories and predictions", "PDF and PowerPoint reports and report sharing"].map(item => (
-                  <li key={item} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-accent" /><span>{item}</span></li>
-                ))}
-              </ul>
-              <Button className="mt-auto w-full" variant="hero" asChild><Link to={startHref}>{session ? "Open dashboard" : "Get Started"}<ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
-            </article>
-
-            <article className="flex flex-col rounded-lg border border-border bg-card p-6 sm:p-8">
-              <div className="mb-5 flex items-center justify-between gap-3">
-                <Users className="h-6 w-6 text-muted-foreground" />
-                <span className="text-xs font-semibold text-muted-foreground">PLANNED</span>
-              </div>
-              <h2 className="text-2xl font-semibold">Team collaboration</h2>
-              <p className="mt-2 text-lg font-medium">Paid plans coming in the future</p>
-              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Team collaboration plans are planned, but are not available to purchase today.</p>
-              <p className="mt-6 text-sm leading-relaxed text-muted-foreground">Prices, billing cycles, subscription benefits and launch timing have not been announced.</p>
-              <div className="mt-auto border-t border-border pt-6 text-sm text-muted-foreground">No subscription checkout is available here.</div>
-            </article>
+          <div className="mb-8 flex justify-center">
+            <div className="inline-flex rounded-full border border-border bg-card p-1" role="group" aria-label="Billing frequency">
+              {(["monthly", "yearly"] as BillingCycle[]).map(c => (
+                <button key={c} onClick={() => setCycle(c)} aria-pressed={cycle === c}
+                  className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${cycle === c ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+                  {c === "monthly" ? "Monthly" : "Annual"}{c === "yearly" && <span className="ml-1.5 text-xs opacity-80">save 16.7%</span>}
+                </button>
+              ))}
+            </div>
           </div>
+
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
+            {PLANS.map(plan => {
+              const price = cycle === "monthly" ? plan.monthlyInr : plan.yearlyInr;
+              const isCurrent = currentPlan === plan.id;
+              return (
+                <article key={plan.id} className={`relative flex flex-col rounded-lg border bg-card p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg ${plan.recommended ? "border-primary shadow-md" : "border-border"}`}>
+                  {plan.recommended && <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-xs font-semibold text-primary-foreground">Most Popular</span>}
+                  <h2 className="text-lg font-semibold">{plan.name}</h2>
+                  <p className="mt-3 text-3xl font-bold">{price === null ? "Custom" : formatInr(price)}</p>
+                  <p className="text-xs text-muted-foreground">{price === null ? "Tailored to your organisation" : price === 0 ? "Free forever" : cycle === "monthly" ? "per month, incl. tax" : "per year, incl. tax"}</p>
+                  {cycle === "yearly" && plan.monthlyInr ? <p className="mt-1 text-xs text-accent">Save {annualSavingsPercent(plan.monthlyInr, plan.yearlyInr!)}% vs monthly</p> : null}
+                  <ul className="my-5 space-y-2 text-sm">
+                    {plan.features.map(f => <li key={f} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-accent" /><span>{f}</span></li>)}
+                    {plan.comingSoon?.map(f => <li key={f} className="flex items-start gap-2 text-muted-foreground"><Clock className="mt-0.5 h-4 w-4 shrink-0" /><span>{f} <span className="text-xs">(coming soon)</span></span></li>)}
+                  </ul>
+                  <div className="mt-auto">
+                    {plan.id === "enterprise" ? (
+                      <Button variant="outline" className="w-full" asChild><a href="mailto:support@cognilytix.app?subject=Enterprise%20plan">Contact Sales</a></Button>
+                    ) : plan.id === "free" ? (
+                      <Button variant="outline" className="w-full" asChild><Link to={startHref}>{session ? "Open dashboard" : "Get Started"}</Link></Button>
+                    ) : isCurrent ? (
+                      <Button variant="outline" className="w-full" asChild><Link to="/account/subscription">Current plan</Link></Button>
+                    ) : (
+                      <Button variant={plan.recommended ? "hero" : "default"} className="w-full" onClick={() => choose(plan)}>{currentPlan && currentPlan !== "free" ? "Switch plan" : "Upgrade"}</Button>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+          <p className="mt-6 text-center text-xs text-muted-foreground">Cancel any time. 14-day refund window — see our <Link to="/refunds" className="underline">Refund Policy</Link>.</p>
         </section>
+        <CheckoutDialog plan={selected} cycle={cycle} onClose={() => setSelected(null)} />
 
         <section id="faq" className="border-t border-border bg-card py-12 sm:py-16">
           <div className="container max-w-5xl">
@@ -135,6 +177,7 @@ export default function Pricing() {
             <Link to="/" className="text-muted-foreground hover:text-foreground">Home</Link>
             <Link to="/privacy" className="text-muted-foreground hover:text-foreground">Privacy Policy</Link>
             <Link to="/terms" className="text-muted-foreground hover:text-foreground">Terms of Service</Link>
+            <Link to="/refunds" className="text-muted-foreground hover:text-foreground">Refund Policy</Link>
           </div>
         </div>
       </footer>

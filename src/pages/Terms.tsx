@@ -6,8 +6,8 @@ export default function Terms() {
     <LegalLayout title="Terms of Service" updated="October 30, 2026">
       <Section title="Agreement">
         <p>
-          By using Cognilytix AI you agree to these terms. The service is operated by{" "}
-          <OwnerConfirm>legal name, address and governing jurisdiction</OwnerConfirm>.
+          By using Cognilytix AI you agree to these terms. You are contracting with Cognilytix, which operates the
+          service. <OwnerConfirm>business address and governing jurisdiction</OwnerConfirm>
         </p>
       </Section>
 
@@ -43,7 +43,22 @@ export default function Terms() {
       </Section>
 
       <Section title="Plans and payment">
-        <p><OwnerConfirm>pricing, billing, refunds and free-plan limits, if any</OwnerConfirm></p>
+        <p>
+          Plans, prices and limits are shown on the <Link to="/pricing" className="text-primary underline">Pricing page</Link>.
+          Our order process is conducted by our online reseller Paddle.com. Paddle.com is the Merchant of Record for
+          all our orders. Paddle provides all customer service inquiries and handles returns. Payment, billing, tax,
+          renewal and cancellation terms are set out in Paddle's{" "}
+          <a href="https://www.paddle.com/legal/checkout-buyer-terms" target="_blank" rel="noopener noreferrer" className="text-primary underline">Buyer Terms</a>.
+          Subscriptions renew automatically until cancelled; cancellation takes effect at the end of the current
+          billing period. Refunds are described in our <Link to="/refunds" className="text-primary underline">Refund Policy</Link>.
+        </p>
+        <p>
+          You must not misuse the service, including unlawful use, fraud or spam, infringing others' intellectual
+          property, or interfering with security (malware, probing or scraping). Cognilytix retains ownership of the
+          service, its software, documentation and branding. We may suspend or end access for material breach,
+          non-payment, security or fraud risk, or repeated or serious policy violations. The service is provided
+          without a guarantee of uninterrupted or error-free performance.
+        </p>
       </Section>
 
       <Section title="Availability and liability">

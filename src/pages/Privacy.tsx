@@ -6,7 +6,7 @@ export default function Privacy() {
       <Section title="Who we are">
         <p>
           Cognilytix AI ("the service") is a web application for analysing spreadsheet data.{" "}
-          <OwnerConfirm>legal name and address of the business or person operating the service</OwnerConfirm>
+          Cognilytix, the data controller for personal data collected through this service. <OwnerConfirm>business address</OwnerConfirm>
         </p>
         <p>
           Contact: <OwnerConfirm>privacy contact email (the site currently lists hello@cognilytix.app)</OwnerConfirm>
@@ -58,7 +58,7 @@ export default function Privacy() {
       <Section title="Sharing with others">
         <p>
           We use service providers for hosting, the database, authentication (including Google sign-in), and AI
-          processing. We do not sell your data. <OwnerConfirm>complete list of service providers</OwnerConfirm>
+          processing. Subscription purchases are handled by Paddle.com, our merchant of record, which processes your name, email, country and payment details to sell the subscription, manage billing, comply with tax law and issue invoices. We also share data with professional advisers and with authorities where required by law. We do not sell your data. <OwnerConfirm>complete list of service providers</OwnerConfirm>
         </p>
         <p>The public website shows a total count of registered users only — never names, emails or IDs.</p>
       </Section>

@@ -1,6 +1,7 @@
+import { withAnalysisGate } from "../_shared/usage-gate.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
-Deno.serve(async (req) => {
+Deno.serve(withAnalysisGate("executive-summary", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
@@ -75,4 +76,4 @@ Arrays should each have 3-5 short items. No prose outside the JSON.`;
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-});
+}));

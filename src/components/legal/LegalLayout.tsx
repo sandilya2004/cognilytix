@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { Brain, ArrowLeft, AlertTriangle } from "lucide-react";
+import { ArrowLeft, AlertTriangle } from "lucide-react";
 
 export function OwnerConfirm({ children }: { children: ReactNode }) {
   return (
@@ -26,7 +26,7 @@ export default function LegalLayout({ title, updated, children }: { title: strin
       <nav className="border-b border-border bg-card/80">
         <div className="container flex h-14 items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <Brain className="h-5 w-5 text-primary" />
+            <img src="/logo.png" alt="Cognilytix AI logo" className="h-6 w-6" />
             <span className="font-semibold text-foreground">Cognilytix AI</span>
           </Link>
           <Link to="/" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
@@ -48,6 +48,7 @@ export default function LegalLayout({ title, updated, children }: { title: strin
         <footer className="border-t border-border pt-6 text-xs text-muted-foreground flex gap-4">
           <Link to="/privacy" className="hover:text-foreground">Privacy Policy</Link>
           <Link to="/terms" className="hover:text-foreground">Terms of Service</Link>
+          <Link to="/refunds" className="hover:text-foreground">Refund Policy</Link>
         </footer>
       </main>
     </div>
