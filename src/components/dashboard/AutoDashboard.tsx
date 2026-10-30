@@ -20,6 +20,8 @@ import { toast } from "sonner";
 
 interface Props {
   data: ParsedData;
+  allowCustomCharts?: boolean;
+  datasetNotice?: string;
 }
 
 export const PALETTES: Record<string, string[]> = {
@@ -75,7 +77,7 @@ function aggregateBy(rows: Record<string, unknown>[], groupKey: string, valueKey
     .sort((a, b) => b.value - a.value);
 }
 
-export default function AutoDashboard({ data }: Props) {
+export default function AutoDashboard({ data, allowCustomCharts = true, datasetNotice }: Props) {
   const cols = useMemo(() => detectColumns(data), [data]);
   const [filters, setFilters] = useState<Record<string, string>>({});
   // A fresh palette is picked automatically each time a dashboard is created
@@ -346,11 +348,11 @@ export default function AutoDashboard({ data }: Props) {
         <Button size="sm" variant="outline" disabled={chartCount >= specs.length} onClick={() => setChartCount(current => nextAutomaticCount(current, specs.length))}>
           <Plus className="h-4 w-4 mr-1" /> More Charts
         </Button>
-        <Button size="sm" variant={showBuilder ? "default" : "outline"} onClick={() => setShowBuilder((v) => !v)}>
+        {allowCustomCharts && <Button size="sm" variant={showBuilder ? "default" : "outline"} onClick={() => setShowBuilder((v) => !v)}>
           <Plus className="h-4 w-4 mr-1" /> Build Custom Chart
-        </Button>
+        </Button>}
       </div>
-      {showBuilder && (
+      {allowCustomCharts && showBuilder && (
         <div className="space-y-3">
           <VisualPicker onSelect={(t) => setPendingType(t)} />
           <AxisBuilder
@@ -366,6 +368,7 @@ export default function AutoDashboard({ data }: Props) {
       )}
 
       <div id="auto-dashboard-root" className="space-y-4 bg-background p-2 rounded-lg">
+        {datasetNotice && <p className="border-l-2 border-accent pl-3 text-sm font-medium text-foreground">{datasetNotice}</p>}
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {[...kpis, ...customKpis.map((c) => ({ label: c.kpiLabel ?? c.title, value: String(c.kpiValue ?? ""), icon: Hash, id: c.id }))].map((k, i) => {
             const Icon = k.icon;
