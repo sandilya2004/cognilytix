@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Brain, FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard, BookOpen, TrendingUp, Moon, Sun, Sparkles, LogOut, Wand2, FileText, Home } from "lucide-react";
+import { Brain, FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard, BookOpen, TrendingUp, Moon, Sun, Sparkles, LogOut, Wand2, FileText, Home, Menu, ChevronDown, ChevronRight, PanelRightClose, PanelRightOpen, Database, Layers, ArrowRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import ReportActions from "@/components/dashboard/ReportActions";
@@ -21,6 +21,7 @@ import PredictionPanel from "@/components/dashboard/PredictionPanel";
 import PredictionInsightsPanel from "@/components/dashboard/PredictionInsightsPanel";
 import type { ParsedData } from "@/lib/data-processing";
 import type { SheetInfo } from "@/lib/data-processing";
+import { parseExcelSheet } from "@/lib/data-processing";
 import type { ChartConfig, ChartType } from "@/lib/chart-types";
 import { interpretPrompt } from "@/lib/local-ai";
 import { generateSummary } from "@/lib/summarize";
@@ -68,6 +69,11 @@ export default function Dashboard() {
   const [searchParams] = useSearchParams();
   const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("upload");
+  const [navigationOpen, setNavigationOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(true);
+  const [sheetsExpanded, setSheetsExpanded] = useState(false);
+  const [selectedSheet, setSelectedSheet] = useState("");
+  const [sheetLoading, setSheetLoading] = useState(false);
   const [data, setData] = useState<ParsedData | null>(null);
   const [fileName, setFileName] = useState("");
   const [charts, setCharts] = useState<ChartConfig[]>([]);
@@ -86,6 +92,39 @@ export default function Dashboard() {
     return false;
   });
   const [pendingChartType, setPendingChartType] = useState<ChartType | null>(null);
+
+  useEffect(() => {
+    if (activeTab === "dashboard") setToolsOpen(true);
+    if (activeTab === "preview") setSheetsExpanded(true);
+  }, [activeTab]);
+
+  const selectTab = (tab: Tab) => {
+    setActiveTab(tab);
+    if (tab === "dashboard") setToolsOpen(true);
+    if (tab === "preview") setSheetsExpanded(true);
+    if (window.matchMedia("(max-width: 1023px)").matches && tab !== "preview") setNavigationOpen(false);
+  };
+
+  const loadSheet = async (name: string) => {
+    if (!excelFile || sheetLoading) return;
+    setSheetLoading(true);
+    try {
+      const parsed = await parseExcelSheet(excelFile, name);
+      if (!parsed.rows.length) { toast.error("This sheet appears to be empty."); return; }
+      clearReportStore();
+      setData(parsed);
+      setSelectedSheet(name);
+      setFileName(`${excelFile.name} — ${name}`);
+      setCharts([]);
+      setSummaryText("");
+      setAiResponse("");
+      setChatMessages([]);
+      setSlicerFilters({});
+      setActiveTab("preview");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not load sheet.");
+    } finally { setSheetLoading(false); }
+  };
 
   // Dark mode effect
   useEffect(() => {
@@ -143,6 +182,7 @@ export default function Dashboard() {
     setSlicerFilters({});
     setExcelSheets([]);
     setExcelFile(null);
+    setSelectedSheet("");
     setActiveTab("upload");
     toast.success("Cleared current data — upload a new file.");
   }, []);
@@ -208,7 +248,7 @@ export default function Dashboard() {
       // Instead of auto-creating, prefill the AxisBuilder so the user can
       // pick X / Y columns first. AxisBuilder handles the scroll.
       setPendingChartType(type);
-      toast.info("Pick X and Y columns in the Axis Builder below.");
+      setToolsOpen(true);
     },
     [data]
   );
@@ -346,15 +386,18 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-dvh overflow-hidden bg-background flex flex-col">
       {/* Header */}
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="flex h-14 items-center justify-between px-4">
-          <div className="flex items-center gap-3">
+        <div className="flex min-h-14 items-center justify-between flex-wrap gap-2 px-4 py-2">
+          <div className="flex items-center gap-3 shrink-0">
+            <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" aria-label="Toggle navigation" aria-expanded={navigationOpen} aria-controls="workspace-navigation" onClick={() => setNavigationOpen(v => !v)}>
+              <Menu className="h-4 w-4" />
+            </Button>
             <Brain className="h-5 w-5 text-primary" />
             <span className="font-semibold text-foreground">Cognilytix AI</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 flex-wrap min-w-0">
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDarkMode(!darkMode)} title="Toggle dark mode">
               {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
@@ -383,35 +426,55 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Tab Navigation */}
-      <nav className="border-b border-border bg-card/50 px-4">
-        <div className="flex gap-1 overflow-x-auto">
+      <div className="relative flex flex-1 min-h-0 overflow-hidden">
+      {navigationOpen && <div className="absolute inset-0 z-30 bg-background/80 lg:hidden" onClick={() => setNavigationOpen(false)} />}
+      <nav id="workspace-navigation" aria-label="Workspace tabs" className={navigationOpen ? "absolute inset-y-0 left-0 z-40 lg:relative w-60 shrink-0 border-r border-border bg-card overflow-y-auto" : "hidden"}>
+        <div className="flex items-center justify-between px-4 py-4 border-b border-border">
+          <span className="text-xs font-semibold text-muted-foreground">WORKSPACE</span>
+          <Button variant="ghost" size="icon" className="h-6 w-6" aria-label="Close navigation" onClick={() => setNavigationOpen(false)}><X className="h-4 w-4" /></Button>
+        </div>
+        <div className="flex flex-col gap-1 p-3">
           {tabs.map(tab => {
             const disabled = tab.needsData && !data;
             const Icon = tab.icon;
             return (
-              <button
+              <div key={tab.id}>
+              <Button
+                variant="ghost"
                 key={tab.id}
                 disabled={disabled}
-                onClick={() => !disabled && setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                onClick={() => !disabled && selectTab(tab.id)}
+                aria-current={activeTab === tab.id ? "page" : undefined}
+                className={`w-full justify-start gap-2 px-3 h-10 text-sm font-medium ${
                   activeTab === tab.id
-                    ? "border-primary text-primary"
-                    : disabled
-                    ? "border-transparent text-muted-foreground/40 cursor-not-allowed"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground"
                 }`}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-4 w-4 shrink-0" />
                 {tab.label}
-              </button>
+                {tab.id === "preview" && data && <ChevronDown className="h-4 w-4 ml-auto" />}
+              </Button>
+              {tab.id === "preview" && data && sheetsExpanded && (
+                <div className="ml-5 pl-3 border-l border-border mt-1 mb-2 space-y-1">
+                  <Button variant="ghost" size="sm" className="w-full justify-between text-xs text-muted-foreground" aria-expanded={sheetsExpanded} onClick={() => setSheetsExpanded(false)}>
+                    {excelSheets.length || 1} {excelSheets.length === 1 || !excelSheets.length ? "sheet" : "sheets"}<ChevronDown className="h-3 w-3" />
+                  </Button>
+                  {excelSheets.length ? excelSheets.map(sheet => (
+                    <Button key={sheet.name} variant="ghost" size="sm" disabled={sheetLoading || sheet.rowCount === 0} onClick={() => loadSheet(sheet.name)} title={`${sheet.name}: ${sheet.rowCount} rows`} className={`w-full justify-start gap-2 text-xs ${selectedSheet === sheet.name ? "bg-primary/10 text-primary" : "text-muted-foreground"}`}>
+                      <Layers className="h-3 w-3 shrink-0" /><span className="truncate">{sheet.name}</span>
+                    </Button>
+                  )) : <p className="px-3 py-2 text-xs text-muted-foreground truncate" title={fileName}>{fileName}</p>}
+                </div>
+              )}
+              </div>
             );
           })}
         </div>
       </nav>
 
       {/* Tab Content */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 min-w-0 overflow-y-auto">
         {/* UPLOAD TAB */}
         {activeTab === "upload" && (
           <div className="max-w-3xl mx-auto p-6">
@@ -489,16 +552,19 @@ export default function Dashboard() {
               </Button>
             </div>
 
-            {/* Visual Picker */}
-            <VisualPicker onSelect={handleVisualPick} />
-
-            {/* Axis Builder */}
-            <AxisBuilder
-              columns={data.columns}
-              onCreateChart={handleAxisCreate}
-              presetType={pendingChartType}
-              onPresetConsumed={() => setPendingChartType(null)}
-            />
+            <div className="flex items-center justify-between gap-3 border-b border-border pb-3">
+              <h2 className="text-lg font-semibold">Dashboard</h2>
+              <Button variant="outline" size="sm" onClick={() => setToolsOpen(v => !v)} aria-expanded={toolsOpen} aria-controls="visualization-tools">
+                <PanelRightOpen className="h-4 w-4 mr-2" /> {toolsOpen ? "Hide tools" : "Visualizations"}
+              </Button>
+            </div>
+            <div aria-label="Connected data blocks" className="flex items-center gap-2 flex-wrap py-2 text-xs">
+              <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 min-w-0 max-w-full"><Database className="h-4 w-4 text-primary shrink-0" /><span className="truncate max-w-48" title={fileName}>{selectedSheet || fileName}</span></div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div className="rounded-md border border-border bg-card px-3 py-2">{data.rows.length.toLocaleString()} rows · {data.columns.length} columns</div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div className="rounded-md border border-primary/30 bg-primary/5 text-primary px-3 py-2">{charts.length} visuals</div>
+            </div>
 
             {/* Summary */}
             {summaryText && (
@@ -602,6 +668,17 @@ export default function Dashboard() {
           </div>
         )}
       </main>
+      {data && (
+        <aside id="visualization-tools" aria-label="Visualization tools" className={activeTab === "dashboard" && toolsOpen ? "absolute sm:relative inset-y-0 right-0 z-20 w-[344px] max-w-[calc(100%-24px)] shrink-0 border-l border-border bg-card overflow-y-auto" : "hidden"}>
+          <div className="sticky top-0 z-10 bg-card border-b border-border px-4 py-3 flex items-center justify-between">
+            <span className="text-sm font-semibold">Build a visual</span>
+            <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Close visualization tools" onClick={() => setToolsOpen(false)}><PanelRightClose className="h-4 w-4" /></Button>
+          </div>
+          <VisualPicker compact onSelect={handleVisualPick} />
+          <AxisBuilder compact columns={data.columns} onCreateChart={handleAxisCreate} presetType={pendingChartType} onPresetConsumed={() => setPendingChartType(null)} />
+        </aside>
+      )}
+      </div>
 
       {/* Sheet Selector Dialog */}
       <SheetSelectorDialog
@@ -612,6 +689,7 @@ export default function Dashboard() {
         fileName={fileName}
         onSheetLoaded={(parsedData, name) => {
           setData(parsedData);
+          setSelectedSheet(name.split(" — ").slice(1).join(" — "));
           setFileName(name);
           setCharts([]);
           setSummaryText("");
