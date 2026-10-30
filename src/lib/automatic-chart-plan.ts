@@ -41,6 +41,12 @@ export function buildAutomaticPlan(data: ParsedData): AutomaticSpec[] {
     result.push({ kind: "vbar", cat: ROW_CATEGORY, val });
     result.push({ kind: "hbar", cat: ROW_CATEGORY, val });
   }
+  if (numeric.length) {
+    for (const cat of groups) {
+      result.push({ kind: "vbar", cat, val: RECORD_COUNT });
+      result.push({ kind: "pie", cat, val: RECORD_COUNT });
+    }
+  }
   return result;
 }
 

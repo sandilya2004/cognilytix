@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Layers, FileSpreadsheet, BarChart3, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,10 @@ interface SheetSelectorDialogProps {
 export default function SheetSelectorDialog({ open, onOpenChange, sheets, file, fileName, onSheetLoaded }: SheetSelectorDialogProps) {
   const [selectedSheet, setSelectedSheet] = useState<string>(sheets[0]?.name || "");
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    setSelectedSheet(sheets.find(sheet => sheet.rowCount > 0)?.name ?? sheets[0]?.name ?? "");
+  }, [file, sheets]);
 
   const activeSheet = sheets.find((s) => s.name === selectedSheet);
 

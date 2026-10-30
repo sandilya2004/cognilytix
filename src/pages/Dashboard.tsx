@@ -75,6 +75,7 @@ export default function Dashboard() {
   const [selectedSheet, setSelectedSheet] = useState("");
   const [sheetLoading, setSheetLoading] = useState(false);
   const [data, setData] = useState<ParsedData | null>(null);
+  const [datasetVersion, setDatasetVersion] = useState(0);
   const [fileName, setFileName] = useState("");
   const [charts, setCharts] = useState<ChartConfig[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -112,6 +113,7 @@ export default function Dashboard() {
       const parsed = await parseExcelSheet(excelFile, name);
       if (!parsed.rows.length) { toast.error("This sheet appears to be empty."); return; }
       clearReportStore();
+      setDatasetVersion(version => version + 1);
       setData(parsed);
       setSelectedSheet(name);
       setFileName(`${excelFile.name} — ${name}`);
@@ -120,6 +122,7 @@ export default function Dashboard() {
       setAiResponse("");
       setChatMessages([]);
       setSlicerFilters({});
+      setPendingChartType(null);
       setActiveTab("preview");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not load sheet.");
@@ -161,6 +164,8 @@ export default function Dashboard() {
   });
 
   const handleDataLoaded = useCallback((parsed: ParsedData, name: string) => {
+    clearReportStore();
+    setDatasetVersion(version => version + 1);
     setData(parsed);
     setFileName(name);
     setCharts([]);
@@ -168,6 +173,10 @@ export default function Dashboard() {
     setAiResponse("");
     setChatMessages([]);
     setSlicerFilters({});
+    setPendingChartType(null);
+    setExcelSheets([]);
+    setExcelFile(null);
+    setSelectedSheet("");
     setActiveTab("preview");
   }, []);
 
@@ -183,6 +192,7 @@ export default function Dashboard() {
     setExcelSheets([]);
     setExcelFile(null);
     setSelectedSheet("");
+    setPendingChartType(null);
     setActiveTab("upload");
     toast.success("Cleared current data — upload a new file.");
   }, []);
@@ -398,7 +408,7 @@ export default function Dashboard() {
             <span className="font-semibold text-foreground">Cognilytix AI</span>
           </div>
           <div className="flex items-center gap-1 flex-wrap min-w-0">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDarkMode(!darkMode)} title="Toggle dark mode">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDarkMode(mode => !mode)} aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"} title={darkMode ? "Switch to light mode" : "Switch to dark mode"}>
               {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
             <Button variant="ghost" size="sm" onClick={() => navigate("/")} title="Home">
@@ -481,6 +491,16 @@ export default function Dashboard() {
             <FileUpload
               onDataLoaded={handleDataLoaded}
               onSheetsDetected={(sheets, file, name) => {
+                clearReportStore();
+                setData(null);
+                setDatasetVersion(version => version + 1);
+                setCharts([]);
+                setSummaryText("");
+                setAiResponse("");
+                setChatMessages([]);
+                setSlicerFilters({});
+                setPendingChartType(null);
+                setSelectedSheet("");
                 setExcelSheets(sheets);
                 setExcelFile(file);
                 setFileName(name);
@@ -646,25 +666,25 @@ export default function Dashboard() {
         {data && (
           <div data-tab-panel className={activeTab === "auto" ? "max-w-7xl mx-auto p-6 space-y-4" : "hidden"}>
             <ReportActions mode="executive" title={fileName.replace(/\.[^/.]+$/, "") || "Cognilytix Report"} fileName={fileName} data={data} charts={charts} summaryText={summaryText} />
-            <AutoDashboard data={data} />
+            <AutoDashboard key={datasetVersion} data={data} />
           </div>
         )}
 
         {/* STORY / PREDICTION TABS — kept mounted so results persist across tab switches */}
         {data && (
           <div data-tab-panel className={activeTab === "story" ? "" : "hidden"}>
-            <StoryDashboard data={data} charts={charts} summaryText={summaryText} />
+            <StoryDashboard key={datasetVersion} data={data} charts={charts} summaryText={summaryText} />
           </div>
         )}
         {data && (
           <div data-tab-panel id="prediction-panel-root" className={activeTab === "prediction" ? "" : "hidden"}>
-            <PredictionPanel data={data} />
+            <PredictionPanel key={datasetVersion} data={data} />
           </div>
         )}
         {data && (
           <div data-tab-panel className={activeTab === "prediction-insights" ? "" : "hidden"}>
             <div className="max-w-6xl mx-auto px-6 pt-4"><ReportActions mode="executive" title={fileName.replace(/\.[^/.]+$/, "") || "Cognilytix Report"} fileName={fileName} data={data} charts={charts} summaryText={summaryText} /></div>
-            <PredictionInsightsPanel data={data} />
+            <PredictionInsightsPanel key={datasetVersion} data={data} />
           </div>
         )}
       </main>
@@ -675,7 +695,7 @@ export default function Dashboard() {
             <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Close visualization tools" onClick={() => setToolsOpen(false)}><PanelRightClose className="h-4 w-4" /></Button>
           </div>
           <VisualPicker compact onSelect={handleVisualPick} />
-          <AxisBuilder compact columns={data.columns} onCreateChart={handleAxisCreate} presetType={pendingChartType} onPresetConsumed={() => setPendingChartType(null)} />
+          <AxisBuilder key={datasetVersion} compact columns={data.columns} onCreateChart={handleAxisCreate} presetType={pendingChartType} onPresetConsumed={() => setPendingChartType(null)} />
         </aside>
       )}
       </div>
@@ -688,11 +708,16 @@ export default function Dashboard() {
         file={excelFile}
         fileName={fileName}
         onSheetLoaded={(parsedData, name) => {
+          clearReportStore();
+          setDatasetVersion(version => version + 1);
           setData(parsedData);
           setSelectedSheet(name.split(" — ").slice(1).join(" — "));
           setFileName(name);
           setCharts([]);
           setSummaryText("");
+          setAiResponse("");
+          setChatMessages([]);
+          setPendingChartType(null);
           setSlicerFilters({});
           setActiveTab("preview");
         }}
