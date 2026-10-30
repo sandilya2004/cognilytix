@@ -251,8 +251,8 @@ export default function LandingPage() {
           <div>
             <p className="font-semibold mb-2">Legal</p>
             <ul className="space-y-1 text-muted-foreground text-xs">
-              <li>Privacy Policy</li>
-              <li>Terms &amp; Conditions</li>
+              <li><button onClick={() => navigate("/privacy")} className="hover:text-foreground">Privacy Policy</button></li>
+              <li><button onClick={() => navigate("/terms")} className="hover:text-foreground">Terms of Service</button></li>
             </ul>
           </div>
         </div>
