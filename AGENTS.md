@@ -1,2 +1,3 @@
 - Mirror generated story and prediction content in the shared report store so exports can include results from inactive tabs.
 - Pass exact full-dataset aggregates separately from sample rows to executive-summary generation so reports do not mistake samples for totals.
+- Keep dashboard navigation and sheet selection in the dashboard shell; reuse compact visualization and axis controls in its right sidebar so chart creation has one stateful builder.

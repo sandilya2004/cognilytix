@@ -5,9 +5,11 @@ import {
   Filter, Image, GitBranch, MessageSquare, Grid3X3, FileCode, CreditCard, BookOpen, Map,
 } from "lucide-react";
 import type { ChartType } from "@/lib/chart-types";
+import { Button } from "@/components/ui/button";
 
 interface VisualPickerProps {
   onSelect: (type: ChartType) => void;
+  compact?: boolean;
 }
 
 const visuals: { type: ChartType; label: string; icon: React.ElementType }[] = [
@@ -38,23 +40,24 @@ const visuals: { type: ChartType; label: string; icon: React.ElementType }[] = [
   { type: "geo-map", label: "Geographic Map", icon: Map },
 ];
 
-export default function VisualPicker({ onSelect }: VisualPickerProps) {
+export default function VisualPicker({ onSelect, compact = false }: VisualPickerProps) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div className={compact ? "p-4 border-b border-border" : "rounded-lg border border-border bg-card p-4"}>
       <h3 className="text-sm font-semibold text-foreground mb-3">Visualizations</h3>
-      <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-2">
+      <div className={compact ? "grid grid-cols-4 gap-2" : "grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-2"}>
         {visuals.map(({ type, label, icon: Icon }) => (
-          <button
+          <Button
+            variant="outline"
             key={type}
             onClick={() => onSelect(type)}
-            className="flex flex-col items-center gap-1.5 rounded-lg border border-border bg-background p-2 hover:border-primary hover:bg-primary/5 transition-colors group"
+            className="h-[64px] min-w-0 whitespace-normal flex flex-col items-center gap-1.5 rounded-lg border border-border bg-background p-2 hover:border-primary hover:bg-primary/5 transition-colors group"
             title={label}
           >
             <Icon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
             <span className="text-[9px] text-muted-foreground group-hover:text-primary transition-colors leading-tight text-center line-clamp-2">
               {label}
             </span>
-          </button>
+          </Button>
         ))}
       </div>
     </div>
