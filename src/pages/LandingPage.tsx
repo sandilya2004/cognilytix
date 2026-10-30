@@ -55,7 +55,7 @@ export default function LandingPage() {
       <nav className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container flex h-16 items-center justify-between">
           <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="flex items-center gap-2">
-            <Brain className="h-6 w-6 text-primary" />
+            <img src="/logo.png" alt="Cognilytix AI logo" className="h-8 w-8" />
             <span className="text-lg font-semibold text-foreground">Cognilytix AI</span>
           </button>
           <div className="hidden md:flex items-center gap-1 text-sm">
@@ -232,7 +232,7 @@ export default function LandingPage() {
         <div className="container grid gap-8 sm:grid-cols-4 text-sm">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Brain className="h-5 w-5 text-primary" />
+              <img src="/logo.png" alt="Cognilytix AI logo" className="h-6 w-6" />
               <span className="font-semibold">Cognilytix AI</span>
             </div>
             <p className="text-muted-foreground text-xs">AI-powered business analytics platform.</p>
