@@ -1,3 +1,7 @@
 - [x] Keep generated story and prediction results available while switching dashboard tabs; clear them on dataset reset.
 - [x] Include the executive summary, charts, insights, risks, predictions, recommendations, and story in PDF and PowerPoint exports.
 - [x] Verify tests, typecheck, and preview build, including corrected full-dataset report totals.
+- [x] Move dashboard tabs into a circular-menu left sidebar and expand Preview sheets.
+- [x] Automatically open right-side visualization and axis tools on Dashboard; show connected dataset blocks.
+- [x] Verify workbook selection, drag/drop chart creation, sidebar reopening, and screen fit.
+- [ ] Match the Pinterest image precisely (blocked reference; needs uploaded image).

@@ -10,6 +10,7 @@ interface AxisBuilderProps {
   onCreateChart: (xKeys: string[], yKeys: string[], chartType: ChartType) => void;
   presetType?: ChartType | null;
   onPresetConsumed?: () => void;
+  compact?: boolean;
 }
 
 const chartOptions: { value: ChartType; label: string }[] = [
@@ -27,7 +28,7 @@ const chartOptions: { value: ChartType; label: string }[] = [
   { value: "kpi", label: "KPI Card" },
 ];
 
-export default function AxisBuilder({ columns, onCreateChart, presetType, onPresetConsumed }: AxisBuilderProps) {
+export default function AxisBuilder({ columns, onCreateChart, presetType, onPresetConsumed, compact = false }: AxisBuilderProps) {
   const [xAxes, setXAxes] = useState<string[]>([]);
   const [yAxes, setYAxes] = useState<string[]>([]);
   const [chartType, setChartType] = useState<ChartType>("bar");
@@ -74,12 +75,12 @@ export default function AxisBuilder({ columns, onCreateChart, presetType, onPres
   };
 
   return (
-    <div ref={rootRef} className="rounded-lg border border-border bg-card p-4 animate-fade-up">
+    <div ref={rootRef} className={compact ? "p-4" : "rounded-lg border border-border bg-card p-4 animate-fade-up"}>
       <h3 className="text-sm font-semibold text-foreground mb-3">
         Drag & Drop Axis Builder
         {presetType === undefined ? null : null}
       </h3>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className={compact ? "grid grid-cols-1 gap-4" : "grid grid-cols-1 md:grid-cols-3 gap-4"}>
         {/* Available Columns */}
         <div className="space-y-2">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Columns</p>
@@ -107,6 +108,7 @@ export default function AxisBuilder({ columns, onCreateChart, presetType, onPres
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">X-Axis (Category)</p>
             <div
+              aria-label="X-axis drop zone"
               onDrop={handleDropX}
               onDragOver={handleDragOver}
               className={`min-h-[48px] rounded-md border-2 border-dashed p-2 flex items-center justify-center transition-colors ${
@@ -134,6 +136,7 @@ export default function AxisBuilder({ columns, onCreateChart, presetType, onPres
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Y-Axis (Values)</p>
             <div
+              aria-label="Y-axis drop zone"
               onDrop={handleDropY}
               onDragOver={handleDragOver}
               className={`min-h-[48px] rounded-md border-2 border-dashed p-2 flex items-center justify-center transition-colors ${
