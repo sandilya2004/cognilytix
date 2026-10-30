@@ -68,12 +68,19 @@ export default function Auth() {
   const [adminLoading, setAdminLoading] = useState(false);
 
   // ── User state ──
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [mode, setMode] = useState<"login" | "signup">(() =>
+    new URLSearchParams(location.search).get("mode") === "signup" ? "signup" : "login"
+  );
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [userError, setUserError] = useState("");
   const [userLoading, setUserLoading] = useState(false);
+
+  useEffect(() => {
+    setMode(new URLSearchParams(location.search).get("mode") === "signup" ? "signup" : "login");
+    setUserError("");
+  }, [location.search]);
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
