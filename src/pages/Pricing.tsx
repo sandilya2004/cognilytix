@@ -41,7 +41,7 @@ const faqs = [
   },
   {
     question: "How do payments, taxes and refunds work?",
-    answer: "Payments are processed by Paddle.com, our merchant of record, which adds GST or VAT where required and shows the final total before you pay. You can pay by card, Google Pay and other local methods where available. You can cancel any time from your Subscription page, and request a refund within 14 days of purchase.",
+    answer: "Payments are processed by Paddle.com, our merchant of record, which includes GST or VAT where required and shows the tax breakdown and final total before you pay. You can pay by card, Google Pay and other local methods where available. You can cancel any time from your Subscription page, and request a refund within 14 days of purchase.",
   },
 ];
 
@@ -97,7 +97,7 @@ export default function Pricing() {
           <header className="mx-auto mb-8 max-w-2xl space-y-4 text-center">
             <p className="flex items-center justify-center gap-2 text-sm font-medium text-primary"><Sparkles className="h-4 w-4" /> Plans and pricing</p>
             <h1 className="text-3xl font-bold sm:text-4xl">Choose the plan that fits your analysis</h1>
-            <p className="text-lg leading-relaxed text-muted-foreground">Prices in Indian rupees, excluding GST or VAT. Applicable tax is shown with the final total at checkout.</p>
+            <p className="text-lg leading-relaxed text-muted-foreground">Prices in Indian rupees, including applicable GST or VAT. The tax breakdown and final total are shown at checkout before you pay.</p>
             {previewMode && (
               <p className="rounded-md border border-primary/30 bg-primary/5 px-4 py-2 text-sm">Cognilytix is in preview: everyone currently keeps full access, and no automatic charges happen unless you choose to subscribe.</p>
             )}
@@ -123,7 +123,7 @@ export default function Pricing() {
                   {plan.recommended && <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-xs font-semibold text-primary-foreground">Most Popular</span>}
                   <h2 className="text-lg font-semibold">{plan.name}</h2>
                   <p className="mt-3 text-3xl font-bold">{price === null ? "Custom" : formatInr(price)}</p>
-                  <p className="text-xs text-muted-foreground">{price === null ? "Tailored to your organisation" : price === 0 ? "Free forever" : cycle === "monthly" ? "per month + tax" : "per year + tax"}</p>
+                  <p className="text-xs text-muted-foreground">{price === null ? "Tailored to your organisation" : price === 0 ? "Free forever" : cycle === "monthly" ? "per month, incl. tax" : "per year, incl. tax"}</p>
                   {cycle === "yearly" && plan.monthlyInr ? <p className="mt-1 text-xs text-accent">Save {annualSavingsPercent(plan.monthlyInr, plan.yearlyInr!)}% vs monthly</p> : null}
                   <ul className="my-5 space-y-2 text-sm">
                     {plan.features.map(f => <li key={f} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-accent" /><span>{f}</span></li>)}

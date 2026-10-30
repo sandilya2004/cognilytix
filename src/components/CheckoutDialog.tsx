@@ -76,7 +76,7 @@ export function CheckoutDialog({ plan, cycle, onClose }: Props) {
         <DialogHeader>
           <DialogTitle>Subscribe to {plan.name}</DialogTitle>
           <DialogDescription>
-            {formatInr(price)} {cycle === "monthly" ? "per month" : "per year"} before tax. GST or VAT for your country is calculated and shown with the final total on the next step, before you pay.
+            {formatInr(price)} {cycle === "monthly" ? "per month" : "per year"} including applicable GST or VAT. The tax breakdown and final total for your country are shown on the next step, before you pay.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
