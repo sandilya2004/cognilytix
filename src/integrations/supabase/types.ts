@@ -327,6 +327,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_set_plan: {
+        Args: { _email: string; _plan_id: string; _reason: string }
+        Returns: undefined
+      }
+      admin_subscription_summary: { Args: { _env?: string }; Returns: Json }
       get_entitlements: {
         Args: { _env?: string; _user_id: string }
         Returns: Json
