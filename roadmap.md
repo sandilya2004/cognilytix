@@ -8,5 +8,5 @@
 - [x] Automatically add more Auto Dashboard charts and expand individual charts.
 - [x] Restore dark theme and reset all dataset-specific state on replacement.
 - [x] Verify multiple datasets, chart expansion, automatic additions, and theme switching.
-- [ ] Add a public Pricing and FAQ page with accurate preview and future team-plan status.
-- [ ] Connect homepage links and verify FAQs, registration navigation, and mobile/light/dark presentation.
+- [x] Add a public Pricing and FAQ page with accurate preview and future team-plan status.
+- [x] Connect homepage links and verify FAQs, registration navigation, and mobile/light/dark presentation.
