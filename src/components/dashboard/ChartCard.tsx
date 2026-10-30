@@ -30,9 +30,10 @@ interface ChartCardProps {
   slicerFilters?: Record<string, Set<string>>;
   onSlicerToggle?: (columnKey: string, value: string) => void;
   sortable?: boolean;
+  chartHeight?: number;
 }
 
-export default function ChartCard({ config, onRemove, onTitleChange, filteredData, slicerFilters, onSlicerToggle, sortable }: ChartCardProps) {
+export default function ChartCard({ config, onRemove, onTitleChange, filteredData, slicerFilters, onSlicerToggle, sortable, chartHeight = 280 }: ChartCardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [showCode, setShowCode] = useState<"none" | "sql" | "python">("none");
   const [explanation, setExplanation] = useState<string | null>(null);
@@ -122,7 +123,7 @@ export default function ChartCard({ config, onRemove, onTitleChange, filteredDat
     switch (type) {
       case "bar":
         return (
-          <ResponsiveContainer width="100%" height={280}>
+          <ResponsiveContainer width="100%" height={chartHeight}>
             <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
               <XAxis dataKey={xKey} tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
@@ -137,7 +138,7 @@ export default function ChartCard({ config, onRemove, onTitleChange, filteredDat
       case "clustered-bar": {
         const keys = yKeys?.length ? yKeys : [yKey!];
         return (
-          <ResponsiveContainer width="100%" height={280}>
+          <ResponsiveContainer width="100%" height={chartHeight}>
             <BarChart data={data} layout={type === "clustered-bar" ? "vertical" : "horizontal"}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
               {type === "clustered-bar" ? (
@@ -165,7 +166,7 @@ export default function ChartCard({ config, onRemove, onTitleChange, filteredDat
       case "stacked-bar": {
         const keys = yKeys?.length ? yKeys : [yKey!];
         return (
-          <ResponsiveContainer width="100%" height={280}>
+          <ResponsiveContainer width="100%" height={chartHeight}>
             <BarChart data={data} layout={type === "stacked-bar" ? "vertical" : "horizontal"}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
               {type === "stacked-bar" ? (
@@ -191,7 +192,7 @@ export default function ChartCard({ config, onRemove, onTitleChange, filteredDat
 
       case "line":
         return (
-          <ResponsiveContainer width="100%" height={280}>
+          <ResponsiveContainer width="100%" height={chartHeight}>
             <LineChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
               <XAxis dataKey={xKey} tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
@@ -204,7 +205,7 @@ export default function ChartCard({ config, onRemove, onTitleChange, filteredDat
 
       case "area":
         return (
-          <ResponsiveContainer width="100%" height={280}>
+          <ResponsiveContainer width="100%" height={chartHeight}>
             <AreaChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
               <XAxis dataKey={xKey} tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
@@ -254,7 +255,7 @@ export default function ChartCard({ config, onRemove, onTitleChange, filteredDat
 
       case "scatter":
         return (
-          <ResponsiveContainer width="100%" height={280}>
+          <ResponsiveContainer width="100%" height={chartHeight}>
             <ScatterChart>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
               <XAxis dataKey={xKey} tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" name={xKey} />
@@ -267,7 +268,7 @@ export default function ChartCard({ config, onRemove, onTitleChange, filteredDat
 
       case "radar":
         return (
-          <ResponsiveContainer width="100%" height={280}>
+          <ResponsiveContainer width="100%" height={chartHeight}>
             <RadarChart data={data.slice(0, 12)}>
               <PolarGrid />
               <PolarAngleAxis dataKey={xKey} tick={{ fontSize: 10 }} />
@@ -279,7 +280,7 @@ export default function ChartCard({ config, onRemove, onTitleChange, filteredDat
 
       case "combo":
         return (
-          <ResponsiveContainer width="100%" height={280}>
+          <ResponsiveContainer width="100%" height={chartHeight}>
             <ComposedChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
               <XAxis dataKey={xKey} tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
@@ -439,7 +440,7 @@ export default function ChartCard({ config, onRemove, onTitleChange, filteredDat
 
       case "histogram":
         return (
-          <ResponsiveContainer width="100%" height={280}>
+          <ResponsiveContainer width="100%" height={chartHeight}>
             <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
               <XAxis dataKey={xKey} tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
@@ -469,7 +470,7 @@ export default function ChartCard({ config, onRemove, onTitleChange, filteredDat
 
       case "waterfall":
         return (
-          <ResponsiveContainer width="100%" height={280}>
+          <ResponsiveContainer width="100%" height={chartHeight}>
             <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
               <XAxis dataKey={xKey} tick={{ fontSize: 12 }} stroke="hsl(220, 9%, 46%)" />
