@@ -104,13 +104,16 @@ export default function LandingPage() {
             Turn raw data into insights, predictions, and decisions using AI.
             Upload a spreadsheet, ask in plain English, and ship board-ready reports in minutes.
           </p>
-          <div className="mt-8 flex justify-center gap-4">
+          <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Button variant="hero" size="lg" onClick={goStart}>
               Get Started
               <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
             <Button variant="outline" size="lg" onClick={() => navigate("/auth")}>
               Login
+            </Button>
+            <Button variant="outline" size="lg" onClick={() => navigate("/demo")}>
+              <BarChart3 className="mr-2 h-4 w-4" /> Try Synthetic Retail Demo
             </Button>
           </div>
         </motion.div>

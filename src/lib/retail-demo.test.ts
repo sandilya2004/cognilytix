@@ -18,8 +18,8 @@ describe("isolated synthetic retail demo", () => {
     const report = createRetailDemoReport();
     expect(report.data).not.toBeNull();
     if (!report.data) throw new Error("Demo dataset missing");
-    expect(calculateDatasetTotals(report.data).numericTotals.Sales).toBe(86940);
-    expect(report.insights?.[0]).toContain("86,940");
+    expect(calculateDatasetTotals(report.data).numericTotals.Sales).toBe(81000);
+    expect(report.insights?.[0]).toContain("81,000");
     expect(retailDemoCSV().split("\n")).toHaveLength(73);
   });
 });

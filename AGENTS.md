@@ -4,3 +4,4 @@
 - Remount dataset-bound panels with a shell-owned dataset version on file or sheet replacement, while keeping them mounted across tab switches, to prevent stale axes and generated results.
 - Build automatic chart specifications in a pure dataset-based planner, separate from slicer filtering, so additional charts and empty filtered views stay stable and testable.
 - Keep Pricing and FAQ on a public /pricing route using existing theme tokens and authentication destinations; informational plan status must not introduce checkout or change access controls.
+- Keep /demo isolated with formula-generated data and explicit local report payloads; reuse read-only views and disable custom AI-capable chart controls, never use ReportActions, report-store, project persistence or backend writes there.
