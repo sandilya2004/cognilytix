@@ -13,6 +13,7 @@ import Reports from "./pages/Reports";
 import SharedReport from "./pages/SharedReport";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import Pricing from "./pages/Pricing";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/" element={<LandingPage />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
+            <Route path="/pricing" element={<Pricing />} />
             <Route path="/report/:id" element={<SharedReport />} />
             <Route
               path="/dashboard"
