@@ -62,7 +62,7 @@ export default function LandingPage() {
             <button onClick={() => scrollTo("features")} className="px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">Features</button>
             <button onClick={() => scrollTo("why")} className="px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">Why Cognilytix</button>
             <button onClick={() => scrollTo("use-cases")} className="px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">Use Cases</button>
-            <button onClick={() => scrollTo("pricing")} className="px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">Pricing</button>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/pricing")} className="text-muted-foreground">Pricing</Button>
             <button onClick={() => scrollTo("contact")} className="px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">Contact</button>
           </div>
           <div className="flex items-center gap-2">
@@ -215,11 +215,12 @@ export default function LandingPage() {
       {/* CTA + Pricing placeholder */}
       <section id="pricing" className="border-t border-border bg-card py-20 scroll-mt-20">
         <div className="container max-w-3xl text-center space-y-6">
-          <h2 className="text-3xl font-bold text-foreground">Start free. Upgrade when you're ready.</h2>
+          <h2 className="text-3xl font-bold text-foreground">Full access during preview</h2>
           <p className="text-muted-foreground">Full access during preview. Paid plans for team collaboration coming soon.</p>
           <Button variant="hero" size="lg" onClick={goStart}>
             Get Started <ArrowRight className="ml-1 h-4 w-4" />
           </Button>
+          <div><Button variant="link" onClick={() => navigate("/pricing")}>View Pricing & FAQ <ArrowRight className="ml-1 h-4 w-4" /></Button></div>
         </div>
       </section>
 
@@ -238,7 +239,7 @@ export default function LandingPage() {
             <ul className="space-y-1 text-muted-foreground text-xs">
               <li><button onClick={() => scrollTo("features")} className="hover:text-foreground">Features</button></li>
               <li><button onClick={() => scrollTo("use-cases")} className="hover:text-foreground">Use Cases</button></li>
-              <li><button onClick={() => scrollTo("pricing")} className="hover:text-foreground">Pricing</button></li>
+              <li><Button variant="link" className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground" onClick={() => navigate("/pricing")}>Pricing & FAQ</Button></li>
             </ul>
           </div>
           <div>
