@@ -232,7 +232,7 @@ export default function Auth() {
       <nav className="border-b border-border bg-card/80 backdrop-blur-sm">
         <div className="container flex h-16 items-center justify-between">
           <button onClick={() => navigate("/")} className="flex items-center gap-2">
-            <Brain className="h-6 w-6 text-primary" />
+            <img src="/logo.png" alt="Cognilytix AI logo" className="h-8 w-8" />
             <span className="text-lg font-semibold">Cognilytix AI</span>
           </button>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDarkMode(!darkMode)}>

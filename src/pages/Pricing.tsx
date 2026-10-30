@@ -55,7 +55,7 @@ export default function Pricing() {
       <nav className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-sm" aria-label="Main navigation">
         <div className="container flex min-h-16 flex-wrap items-center justify-between gap-3 py-3">
           <Link to="/" className="flex items-center gap-2 font-semibold">
-            <Brain className="h-6 w-6 shrink-0 text-primary" /> Cognilytix AI
+            <img src="/logo.png" alt="Cognilytix AI logo" className="h-8 w-8 shrink-0" /> Cognilytix AI
           </Link>
           <div className="flex items-center gap-1 sm:gap-2">
             <Button variant="ghost" size="sm" asChild><Link to="/">Home</Link></Button>
