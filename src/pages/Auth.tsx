@@ -87,7 +87,7 @@ export default function Auth() {
     setAdminError("");
     const parsed = adminSchema.safeParse({ userId: adminUserId, password: adminPassword });
     if (!parsed.success) {
-      setAdminError(parsed.error.errors[0]?.message ?? "Invalid input");
+      setAdminError(parsed.error.issues[0]?.message ?? "Invalid input");
       return;
     }
     setAdminLoading(true);
@@ -127,7 +127,7 @@ export default function Auth() {
     setUserError("");
     const parsed = userSignupSchema.safeParse({ name, email, password });
     if (!parsed.success) {
-      setUserError(parsed.error.errors[0]?.message ?? "Invalid input");
+      setUserError(parsed.error.issues[0]?.message ?? "Invalid input");
       return;
     }
     setUserLoading(true);
@@ -163,7 +163,7 @@ export default function Auth() {
     setUserError("");
     const parsed = userLoginSchema.safeParse({ email, password });
     if (!parsed.success) {
-      setUserError(parsed.error.errors[0]?.message ?? "Invalid input");
+      setUserError(parsed.error.issues[0]?.message ?? "Invalid input");
       return;
     }
     setUserLoading(true);
