@@ -10,5 +10,5 @@
 - [x] Verify multiple datasets, chart expansion, automatic additions, and theme switching.
 - [x] Add a public Pricing and FAQ page with accurate preview and future team-plan status.
 - [x] Connect homepage links and verify FAQs, registration navigation, and mobile/light/dark presentation.
-- [ ] Add isolated synthetic retail data and public demo with existing preview, health checks, dashboard and report tools.
-- [ ] Connect homepage demo button and verify signed-out interactions, safe local exports, and mobile layout.
+- [x] Add isolated synthetic retail data and public demo with existing preview, health checks, dashboard and report tools.
+- [x] Connect homepage demo button and verify signed-out interactions, safe local exports, and mobile layout.

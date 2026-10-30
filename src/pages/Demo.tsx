@@ -90,7 +90,7 @@ export default function Demo() {
         </div>
         {/* Keep the local dashboard mounted; show it during report export for chart capture. */}
         <div hidden={tab !== "dashboard" && tab !== "report"}>
-          <AutoDashboard data={data} allowCustomCharts={false} />
+          <AutoDashboard data={data} allowCustomCharts={false} datasetNotice={DEMO_NOTICE} />
         </div>
         <div hidden={tab !== "insights"} className="space-y-8">
           <header className="space-y-2"><h2 className="text-xl font-semibold">Sample retail insights</h2><p className="text-sm text-muted-foreground">Calculated locally from the full synthetic dataset; not a live AI response. Insights describe all 72 rows, independent of dashboard filters.</p></header>
