@@ -46,7 +46,7 @@ export default function LandingPage() {
   }, [darkMode]);
 
   const dashHref = role === "admin" ? "/admin-dashboard" : "/dashboard";
-  const goStart = () => navigate(session ? dashHref : "/auth");
+  const goStart = () => navigate(session ? dashHref : "/auth?mode=signup");
   const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 
   return (
