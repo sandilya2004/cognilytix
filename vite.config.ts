@@ -18,5 +18,10 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    // One React copy, even if the dev server re-bundles libraries mid-session.
+    dedupe: ["react", "react-dom", "react/jsx-runtime", "@tanstack/react-query"],
+  },
+  optimizeDeps: {
+    include: ["react", "react-dom", "react/jsx-runtime", "react-dom/client", "@tanstack/react-query"],
   },
 }));
