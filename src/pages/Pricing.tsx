@@ -177,6 +177,7 @@ export default function Pricing() {
             <Link to="/" className="text-muted-foreground hover:text-foreground">Home</Link>
             <Link to="/privacy" className="text-muted-foreground hover:text-foreground">Privacy Policy</Link>
             <Link to="/terms" className="text-muted-foreground hover:text-foreground">Terms of Service</Link>
+            <Link to="/refunds" className="text-muted-foreground hover:text-foreground">Refund Policy</Link>
           </div>
         </div>
       </footer>
