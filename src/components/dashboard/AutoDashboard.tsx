@@ -20,6 +20,7 @@ import { toast } from "sonner";
 
 interface Props {
   data: ParsedData;
+  allowCustomCharts?: boolean;
 }
 
 export const PALETTES: Record<string, string[]> = {
@@ -75,7 +76,7 @@ function aggregateBy(rows: Record<string, unknown>[], groupKey: string, valueKey
     .sort((a, b) => b.value - a.value);
 }
 
-export default function AutoDashboard({ data }: Props) {
+export default function AutoDashboard({ data, allowCustomCharts = true }: Props) {
   const cols = useMemo(() => detectColumns(data), [data]);
   const [filters, setFilters] = useState<Record<string, string>>({});
   // A fresh palette is picked automatically each time a dashboard is created
@@ -346,11 +347,11 @@ export default function AutoDashboard({ data }: Props) {
         <Button size="sm" variant="outline" disabled={chartCount >= specs.length} onClick={() => setChartCount(current => nextAutomaticCount(current, specs.length))}>
           <Plus className="h-4 w-4 mr-1" /> More Charts
         </Button>
-        <Button size="sm" variant={showBuilder ? "default" : "outline"} onClick={() => setShowBuilder((v) => !v)}>
+        {allowCustomCharts && <Button size="sm" variant={showBuilder ? "default" : "outline"} onClick={() => setShowBuilder((v) => !v)}>
           <Plus className="h-4 w-4 mr-1" /> Build Custom Chart
-        </Button>
+        </Button>}
       </div>
-      {showBuilder && (
+      {allowCustomCharts && showBuilder && (
         <div className="space-y-3">
           <VisualPicker onSelect={(t) => setPendingType(t)} />
           <AxisBuilder
