@@ -55,7 +55,7 @@ export function CheckoutDialog({ plan, cycle, onClose }: Props) {
       onClose();
       window.Paddle.Checkout.open({
         transactionId: data.transactionId,
-        customer: { email: user?.email, address: { countryCode: country } },
+        customer: { email: user?.email },
         settings: {
           displayMode: "overlay",
           variant: "one-page",
