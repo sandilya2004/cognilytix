@@ -12,11 +12,20 @@ export interface ParsedData {
   rawHeaders: string[];
 }
 
+function numericValue(value: unknown): number | null {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value !== "string") return null;
+  const text = value.trim().replace(/^[₹$€£]\s*/, "").replace(/,/g, "").replace(/%$/, "");
+  const normalized = /^\(.*\)$/.test(text) ? `-${text.slice(1, -1)}` : text;
+  return normalized !== "" && /^[+-]?(?:\d+\.?\d*|\.\d+)$/.test(normalized) ? Number(normalized) : null;
+}
+
 function detectType(values: unknown[]): DataColumn["type"] {
   const sample = values.filter((v) => v !== null && v !== undefined && v !== "").slice(0, 50);
   if (sample.length === 0) return "string";
 
-  const numCount = sample.filter((v) => !isNaN(Number(v))).length;
+  if (sample.every(v => typeof v === "boolean" || ["true", "false"].includes(String(v).toLowerCase()))) return "boolean";
+  const numCount = sample.filter((v) => numericValue(v) !== null).length;
   if (numCount / sample.length > 0.8) return "number";
 
   const dateCount = sample.filter((v) => !isNaN(Date.parse(String(v)))).length;
@@ -29,7 +38,24 @@ function detectType(values: unknown[]): DataColumn["type"] {
 }
 
 function cleanHeaders(headers: string[]): string[] {
-  return headers.map((h) => String(h).trim().replace(/\s+/g, " ") || `Column_${Math.random().toString(36).slice(2, 6)}`);
+  const used = new Set<string>();
+  return headers.map((h, index) => {
+    const base = String(h ?? "").trim().replace(/\s+/g, " ") || `Column_${index + 1}`;
+    let name = base;
+    let suffix = 2;
+    while (used.has(name)) name = `${base}_${suffix++}`;
+    used.add(name);
+    return name;
+  });
+}
+
+export function parsedRows(headers: string[], rows: Record<string, unknown>[]): ParsedData {
+  const columns = headers.map(name => ({ name, type: detectType(rows.map(row => row[name])) }));
+  const normalized = rows.map(row => Object.fromEntries(columns.map(column => {
+    const value = row[column.name];
+    return [column.name, column.type === "number" ? numericValue(value) ?? value : value instanceof Date ? value.toISOString() : value];
+  })));
+  return { columns, rows: normalized, rawHeaders: headers };
 }
 
 function rowsFromSheet(data: unknown[][]): Record<string, unknown>[] {
@@ -60,11 +86,7 @@ export function parseCSV(file: File): Promise<ParsedData> {
           });
           return clean;
         });
-        const columns: DataColumn[] = headers.map((name) => ({
-          name,
-          type: detectType(rows.map((r) => r[name])),
-        }));
-        resolve({ columns, rows, rawHeaders: headers });
+        resolve(parsedRows(headers, rows));
       },
       error: reject,
     });
@@ -84,7 +106,7 @@ export function getExcelSheets(file: File): Promise<SheetInfo[]> {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const wb = XLSX.read(e.target?.result, { type: "array" });
+        const wb = XLSX.read(e.target?.result, { type: "array", cellDates: true });
         const sheets: SheetInfo[] = wb.SheetNames.map((name) => {
           const sheet = wb.Sheets[name];
           const raw = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1 }) as unknown[][];
@@ -112,17 +134,13 @@ export function parseExcelSheet(file: File, sheetName: string): Promise<ParsedDa
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const wb = XLSX.read(e.target?.result, { type: "array" });
+        const wb = XLSX.read(e.target?.result, { type: "array", cellDates: true });
         const sheet = wb.Sheets[sheetName];
         if (!sheet) throw new Error(`Sheet "${sheetName}" not found`);
         const data = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1 });
-        const headers = cleanHeaders((data[0] as unknown[]).map(String));
+        const headers = cleanHeaders(((data[0] ?? []) as unknown[]).map(String));
         const rows = rowsFromSheet(data as unknown[][]);
-        const columns: DataColumn[] = headers.map((name) => ({
-          name,
-          type: detectType(rows.map((r) => r[name])),
-        }));
-        resolve({ columns, rows, rawHeaders: headers });
+        resolve(parsedRows(headers, rows));
       } catch (err) {
         reject(err);
       }
@@ -137,16 +155,12 @@ export function parseExcel(file: File): Promise<ParsedData> {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const wb = XLSX.read(e.target?.result, { type: "array" });
+        const wb = XLSX.read(e.target?.result, { type: "array", cellDates: true });
         const sheet = wb.Sheets[wb.SheetNames[0]];
         const data = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1 });
-        const headers = cleanHeaders((data[0] as unknown[]).map(String));
+        const headers = cleanHeaders(((data[0] ?? []) as unknown[]).map(String));
         const rows = rowsFromSheet(data as unknown[][]);
-        const columns: DataColumn[] = headers.map((name) => ({
-          name,
-          type: detectType(rows.map((r) => r[name])),
-        }));
-        resolve({ columns, rows, rawHeaders: headers });
+        resolve(parsedRows(headers, rows));
       } catch (err) {
         reject(err);
       }
