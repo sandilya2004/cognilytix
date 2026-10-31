@@ -3,7 +3,7 @@ import { CreditCard } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Brain, Users, Shield, LogOut, Moon, Sun, BarChart3, Search, Trash2,
+  Users, Shield, LogOut, Moon, Sun, BarChart3, Search, Trash2,
   AlertTriangle, LayoutDashboard, Inbox, Activity, Settings as SettingsIcon,
   Check, X, KeyRound, UserMinus, Loader2,
 } from "lucide-react";
@@ -221,7 +221,7 @@ export default function AdminDashboard() {
       {/* SIDEBAR */}
       <aside className="w-60 shrink-0 border-r border-border bg-card flex flex-col sticky top-0 h-screen">
         <div className="h-16 flex items-center gap-2 px-5 border-b border-border">
-          <Brain className="h-6 w-6 text-primary" />
+          <img src="/logo.png" alt="Cognilytix AI logo" className="h-8 w-8" />
           <div>
             <p className="text-sm font-bold leading-none">Cognilytix</p>
             <p className="text-[10px] text-muted-foreground mt-0.5">Admin Console</p>

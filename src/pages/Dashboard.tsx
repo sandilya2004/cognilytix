@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Brain, FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard, BookOpen, TrendingUp, Moon, Sun, Sparkles, LogOut, Wand2, FileText, Home, Menu, ChevronDown, ChevronRight, PanelRightClose, PanelRightOpen, Database, Layers, ArrowRight, X } from "lucide-react";
+import { FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard, BookOpen, TrendingUp, Moon, Sun, Sparkles, LogOut, Wand2, FileText, Home, Menu, ChevronDown, ChevronRight, PanelRightClose, PanelRightOpen, Database, Layers, ArrowRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import ReportActions from "@/components/dashboard/ReportActions";
@@ -405,7 +405,7 @@ export default function Dashboard() {
             <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" aria-label="Toggle navigation" aria-expanded={navigationOpen} aria-controls="workspace-navigation" onClick={() => setNavigationOpen(v => !v)}>
               <Menu className="h-4 w-4" />
             </Button>
-            <Brain className="h-5 w-5 text-primary" />
+            <img src="/logo.png" alt="Cognilytix AI logo" className="h-7 w-7" />
             <span className="font-semibold text-foreground">Cognilytix AI</span>
           </div>
           <div className="flex items-center gap-1 flex-wrap min-w-0">

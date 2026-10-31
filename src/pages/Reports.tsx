@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Brain, ArrowLeft, Trash2, ExternalLink, Copy, FileText, Loader2 } from "lucide-react";
+import { ArrowLeft, Trash2, ExternalLink, Copy, FileText, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -59,7 +59,7 @@ export default function Reports() {
               <ArrowLeft className="h-4 w-4 mr-1" /> Back
             </Button>
             <div className="flex items-center gap-2">
-              <Brain className="h-5 w-5 text-primary" />
+              <img src="/logo.png" alt="Cognilytix AI logo" className="h-6 w-6" />
               <span className="font-semibold">Report History</span>
             </div>
           </div>
