@@ -337,6 +337,7 @@ export type Database = {
         Returns: Json
       }
       get_my_entitlements: { Args: { _env?: string }; Returns: Json }
+      get_preview_mode: { Args: never; Returns: boolean }
       get_registered_user_count: { Args: never; Returns: number }
       has_role: {
         Args: {
