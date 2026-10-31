@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Brain, FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard, BookOpen, TrendingUp, Moon, Sun, Sparkles, LogOut, Wand2, FileText, Home, Menu, ChevronDown, ChevronRight, PanelRightClose, PanelRightOpen, Database, Layers, ArrowRight, X } from "lucide-react";
+import { FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard, BookOpen, TrendingUp, Moon, Sun, Sparkles, LogOut, Wand2, FileText, Home, Menu, ChevronDown, ChevronRight, PanelRightClose, PanelRightOpen, Database, Layers, ArrowRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import ReportActions from "@/components/dashboard/ReportActions";

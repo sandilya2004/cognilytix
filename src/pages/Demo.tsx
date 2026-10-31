@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { BarChart3, Brain, CheckCircle2, Download, FileText, FlaskConical, Lightbulb, Loader2, Moon, Sun, Table2 } from "lucide-react";
+import { BarChart3, CheckCircle2, Download, FileText, FlaskConical, Lightbulb, Loader2, Moon, Sun, Table2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AutoDashboard from "@/components/dashboard/AutoDashboard";

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Brain, Plus, Trash2, Clock, ArrowLeft, FolderOpen, FolderPlus, ChevronRight, FileBarChart } from "lucide-react";
+import { Plus, Trash2, Clock, ArrowLeft, FolderOpen, FolderPlus, ChevronRight, FileBarChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import {

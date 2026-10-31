@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Brain, ArrowLeft, Trash2, ExternalLink, Copy, FileText, Loader2 } from "lucide-react";
+import { ArrowLeft, Trash2, ExternalLink, Copy, FileText, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";

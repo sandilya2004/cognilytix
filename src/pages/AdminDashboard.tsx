@@ -3,7 +3,7 @@ import { CreditCard } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Brain, Users, Shield, LogOut, Moon, Sun, BarChart3, Search, Trash2,
+  Users, Shield, LogOut, Moon, Sun, BarChart3, Search, Trash2,
   AlertTriangle, LayoutDashboard, Inbox, Activity, Settings as SettingsIcon,
   Check, X, KeyRound, UserMinus, Loader2,
 } from "lucide-react";
