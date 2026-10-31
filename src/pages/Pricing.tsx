@@ -59,7 +59,7 @@ export default function Pricing() {
   }, [darkMode]);
   useEffect(() => { window.scrollTo(0, 0); }, []);
   useEffect(() => {
-    supabase.from("app_settings").select("preview_mode").eq("id", true).maybeSingle().then(({ data }) => setPreviewMode(data?.preview_mode ?? true));
+    supabase.rpc("get_preview_mode").then(({ data }) => setPreviewMode(data ?? true));
   }, []);
   useEffect(() => {
     if (!session) { setCurrentPlan(null); return; }
