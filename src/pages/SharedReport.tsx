@@ -91,7 +91,7 @@ export default function SharedReport() {
       <div className="flex min-h-screen items-center justify-center p-6">
         <Card className="max-w-md w-full">
           <CardContent className="p-8 text-center space-y-3">
-            <Brain className="h-8 w-8 text-primary mx-auto" />
+            <img src="/logo.png" alt="Cognilytix AI logo" className="h-10 w-10 mx-auto" />
             <p className="text-lg font-semibold">Report unavailable</p>
             <p className="text-sm text-muted-foreground">{error}</p>
           </CardContent>
@@ -138,7 +138,7 @@ export default function SharedReport() {
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container flex h-14 items-center justify-between">
           <div className="flex items-center gap-2">
-            <Brain className="h-5 w-5 text-primary" />
+            <img src="/logo.png" alt="Cognilytix AI logo" className="h-6 w-6" />
             <div>
               <p className="text-sm font-semibold leading-tight">{row.title}</p>
               <p className="text-[11px] text-muted-foreground">Shared report · {row.snapshot.fileName}</p>

@@ -106,7 +106,7 @@ export default function Projects() {
             <Button variant="ghost" size="icon" onClick={() => activeFolderId ? setActiveFolderId(null) : navigate("/")}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <Brain className="h-5 w-5 text-primary" />
+            <img src="/logo.png" alt="Cognilytix AI logo" className="h-7 w-7" />
             <span className="font-semibold text-foreground">
               {activeFolderId ? activeFolder?.name : "My Projects"}
             </span>

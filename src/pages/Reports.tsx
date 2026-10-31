@@ -59,7 +59,7 @@ export default function Reports() {
               <ArrowLeft className="h-4 w-4 mr-1" /> Back
             </Button>
             <div className="flex items-center gap-2">
-              <Brain className="h-5 w-5 text-primary" />
+              <img src="/logo.png" alt="Cognilytix AI logo" className="h-6 w-6" />
               <span className="font-semibold">Report History</span>
             </div>
           </div>

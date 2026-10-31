@@ -1,6 +1,5 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth, type AppRole } from "@/hooks/useAuth";
-import { Brain } from "lucide-react";
 
 export default function ProtectedRoute({
   children,
@@ -16,7 +15,7 @@ export default function ProtectedRoute({
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="flex items-center gap-2 text-muted-foreground">
-          <Brain className="h-5 w-5 animate-pulse text-primary" />
+          <img src="/logo.png" alt="Cognilytix AI logo" className="h-6 w-6 animate-pulse" />
           <span className="text-sm">Loading…</span>
         </div>
       </div>

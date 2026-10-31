@@ -48,7 +48,7 @@ export default function Demo() {
     <div className="min-h-screen bg-background text-foreground">
       <nav className="border-b border-border bg-card" aria-label="Demo navigation">
         <div className="container flex flex-wrap items-center justify-between gap-3 py-3">
-          <Link to="/" className="flex items-center gap-2 font-semibold"><Brain className="h-6 w-6 text-primary" /> Cognilytix AI</Link>
+          <Link to="/" className="flex items-center gap-2 font-semibold"><img src="/logo.png" alt="Cognilytix AI logo" className="h-7 w-7" /> Cognilytix AI</Link>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" aria-label={dark ? "Switch to light mode" : "Switch to dark mode"} title="Toggle theme" onClick={() => setDark(value => !value)}>{dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</Button>
             <Button variant="ghost" size="sm" asChild><Link to="/">Home</Link></Button>
