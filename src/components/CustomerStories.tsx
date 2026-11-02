@@ -55,8 +55,7 @@ export default function CustomerStories() {
 
   return (
     <div className="mt-12 text-left">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h2 className="text-3xl font-bold text-foreground">Customer Stories</h2>
+      <div className="flex justify-center">
         <Button variant="outline" onClick={() => { setError(""); setOpen(true); }}>
           <MessageSquarePlus className="mr-2 h-4 w-4" /> Comment
         </Button>
