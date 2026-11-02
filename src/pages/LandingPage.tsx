@@ -208,12 +208,19 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Customer Stories */}
-      <section id="customer-stories" aria-labelledby="customer-stories-heading" className="border-t border-border py-16 sm:py-20 scroll-mt-20">
+      {/* Live Users */}
+      <section id="live-users" aria-labelledby="live-users-heading" className="border-t border-border py-16 sm:py-20 scroll-mt-20">
         <div className="container max-w-3xl text-center">
-          <h2 id="customer-stories-heading" className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">Customer Stories</h2>
+          <h2 id="live-users-heading" className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">Live Users</h2>
           <p className="mt-4 text-base text-muted-foreground">Trusted by teams that move fast</p>
           <div className="mt-8"><UserCountCard /></div>
+        </div>
+      </section>
+
+      {/* Customer Stories */}
+      <section id="customer-stories" aria-labelledby="customer-stories-heading" className="border-t border-border bg-card py-16 sm:py-20 scroll-mt-20">
+        <div className="container max-w-3xl text-center">
+          <h2 id="customer-stories-heading" className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">Customer Stories</h2>
           <CustomerStories />
         </div>
       </section>
