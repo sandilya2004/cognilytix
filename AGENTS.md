@@ -1,4 +1,5 @@
 - Mirror generated story and prediction content in the shared report store so exports can include results from inactive tabs.
+- Homepage customer stories use validated submission and bounded public-read functions; never expose email or direct visitor table reads, because comments are public but contact details are private.
 - Pass exact full-dataset aggregates separately from sample rows to executive-summary generation so reports do not mistake samples for totals.
 - Keep dashboard navigation and sheet selection in the dashboard shell; reuse compact visualization and axis controls in its right sidebar so chart creation has one stateful builder.
 - Remount dataset-bound panels with a shell-owned dataset version on file or sheet replacement, while keeping them mounted across tab switches, to prevent stale axes and generated results.
