@@ -12,6 +12,6 @@
 - [x] Connect homepage links and verify FAQs, registration navigation, and mobile/light/dark presentation.
 - [x] Add isolated synthetic retail data and public demo with existing preview, health checks, dashboard and report tools.
 - [x] Connect homepage demo button and verify signed-out interactions, safe local exports, and mobile layout.
-- [ ] Add the uploaded guide download below business questions.
-- [ ] Add optional comments with required name, email and description; publish stories without emails.
-- [ ] Verify guide downloads, comment validation and saved Customer Stories.
+- [x] Add the uploaded guide download below business questions.
+- [x] Add optional comments with required name, email and description; publish stories without emails.
+- [x] Verify guide downloads, comment validation and saved Customer Stories.
