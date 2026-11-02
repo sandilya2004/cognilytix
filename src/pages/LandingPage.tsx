@@ -195,15 +195,16 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-4 border-t border-border pt-8">
-            <div className="text-center sm:text-left">
-              <h3 className="font-semibold text-foreground">Cognilytix AI User Guide</h3>
-              <p className="mt-1 text-sm text-muted-foreground">15-page PDF</p>
-            </div>
-            <Button variant="outline" asChild>
-              <a href={userGuide.url} download="Cognilytix_AI_15_Page_User_Guide.pdf"><Download className="mr-2 h-4 w-4" /> Download User Guide</a>
-            </Button>
-          </div>
+        </div>
+      </section>
+
+      <section id="user-guide" aria-labelledby="user-guide-heading" className="border-t border-border bg-background py-16 sm:py-20 scroll-mt-20">
+        <div className="container max-w-3xl text-center">
+          <h2 id="user-guide-heading" className="text-3xl font-bold text-foreground sm:text-4xl">Cognilytix AI User Guide</h2>
+          <p className="mt-4 text-base text-muted-foreground">15-page PDF</p>
+          <Button variant="hero" size="lg" className="mt-8" asChild>
+            <a href={userGuide.url} download="Cognilytix_AI_15_Page_User_Guide.pdf"><Download className="mr-2 h-4 w-4" /> Download User Guide</a>
+          </Button>
         </div>
       </section>
 
