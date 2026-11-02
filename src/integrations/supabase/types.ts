@@ -35,6 +35,33 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_stories: {
+        Row: {
+          created_at: string
+          description: string
+          email: string
+          id: string
+          name: string
+          suggestions: string | null
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          email: string
+          id?: string
+          name: string
+          suggestions?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          email?: string
+          id?: string
+          name?: string
+          suggestions?: string | null
+        }
+        Relationships: []
+      }
       pending_requests: {
         Row: {
           created_at: string
@@ -345,6 +372,25 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      list_customer_stories: {
+        Args: { _offset?: number }
+        Returns: {
+          created_at: string
+          description: string
+          id: string
+          name: string
+          suggestions: string
+        }[]
+      }
+      submit_customer_story: {
+        Args: {
+          _description: string
+          _email: string
+          _name: string
+          _suggestions?: string
+        }
+        Returns: string
       }
     }
     Enums: {

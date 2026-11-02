@@ -2,7 +2,7 @@ import LegalLayout, { OwnerConfirm, Section } from "@/components/legal/LegalLayo
 
 export default function Privacy() {
   return (
-    <LegalLayout title="Privacy Policy" updated="October 30, 2026">
+    <LegalLayout title="Privacy Policy" updated="November 2, 2026">
       <Section title="Who we are">
         <p>
           Cognilytix AI ("the service") is a web application for analysing spreadsheet data.{" "}
@@ -55,12 +55,17 @@ export default function Privacy() {
         </ul>
       </Section>
 
+      <Section title="Optional customer comments">
+        <p>Commenting on the homepage is optional. If you submit a comment, we store your name, email, description and any suggestions in our database. Your name, description, suggestions and submission date appear publicly in Customer Stories. Your email is not included in the public stories response. Do not include confidential information in the public fields.</p>
+        <p>Comments remain stored until removed by the site operator. <OwnerConfirm>comment retention period and a monitored contact for correction or deletion requests</OwnerConfirm></p>
+      </Section>
+
       <Section title="Sharing with others">
         <p>
           We use service providers for hosting, the database, authentication (including Google sign-in), and AI
           processing. Subscription purchases are handled by Paddle.com, our merchant of record, which processes your name, email, country and payment details to sell the subscription, manage billing, comply with tax law and issue invoices. We also share data with professional advisers and with authorities where required by law. We do not sell your data. <OwnerConfirm>complete list of service providers</OwnerConfirm>
         </p>
-        <p>The public website shows a total count of registered users only — never names, emails or IDs.</p>
+        <p>The registered-user counter publishes only an aggregate number, never account names, emails or IDs. Separately, Customer Stories publishes the name and comment content voluntarily submitted through its form, but not the commenter's email.</p>
       </Section>
 
       <Section title="Your choices and rights">

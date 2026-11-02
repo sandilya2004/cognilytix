@@ -9,6 +9,8 @@ import { useState, useEffect } from "react";
 import heroImage from "@/assets/hero-dashboard.png";
 import { useAuth } from "@/hooks/useAuth";
 import UserCountCard from "@/components/UserCountCard";
+import CustomerStories from "@/components/CustomerStories";
+import userGuide from "@/assets/cognilytix-user-guide.pdf.asset.json";
 
 const features = [
   { icon: BarChart3, title: "Dashboard Generation", description: "Auto-build executive dashboards from any CSV or Excel — KPIs, trends, comparisons in one click." },
@@ -193,6 +195,15 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-4 border-t border-border pt-8">
+            <div className="text-center sm:text-left">
+              <h3 className="font-semibold text-foreground">Cognilytix AI User Guide</h3>
+              <p className="mt-1 text-sm text-muted-foreground">15-page PDF</p>
+            </div>
+            <Button variant="outline" asChild>
+              <a href={userGuide.url} download="Cognilytix_AI_15_Page_User_Guide.pdf"><Download className="mr-2 h-4 w-4" /> Download User Guide</a>
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -201,17 +212,7 @@ export default function LandingPage() {
         <div className="container max-w-3xl text-center">
           <h2 className="text-3xl font-bold text-foreground">Trusted by teams that move fast</h2>
           <div className="mt-8"><UserCountCard /></div>
-          <p className="mt-8 text-muted-foreground">Customer stories coming soon. Want to be featured? Get in touch.</p>
-          <div className="mt-8 grid gap-4 sm:grid-cols-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="rounded-lg border border-dashed border-border bg-card/50 p-6 text-left">
-                <div className="h-2 w-16 bg-muted rounded mb-3" />
-                <div className="h-2 w-full bg-muted/60 rounded mb-1.5" />
-                <div className="h-2 w-4/5 bg-muted/60 rounded mb-1.5" />
-                <div className="h-2 w-2/3 bg-muted/60 rounded" />
-              </div>
-            ))}
-          </div>
+          <CustomerStories />
         </div>
       </section>
 
