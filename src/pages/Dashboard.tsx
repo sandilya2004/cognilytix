@@ -418,6 +418,9 @@ export default function Dashboard() {
             <Button variant="ghost" size="sm" onClick={() => navigate("/projects")}>
               <FolderOpen className="h-4 w-4 mr-1" /> Projects
             </Button>
+            <Button variant="hero" size="sm" onClick={handleSaveProject} title="Save Project (Ctrl/Cmd+S)">
+              <Save className="h-4 w-4 mr-1" /> Save
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => navigate("/account/subscription")}>
               Subscription
             </Button>
@@ -659,12 +662,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Save */}
-            <div className="flex justify-center pt-2 pb-6">
-              <Button variant="hero" size="lg" onClick={handleSaveProject}>
-                <Save className="h-5 w-5 mr-2" /> Save Project
-              </Button>
-            </div>
           </div>
         )}
         {/* AUTO DASHBOARD TAB */}
