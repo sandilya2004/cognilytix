@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { setReportStore } from "@/lib/report-store";
+import { reportStore, setReportStore } from "@/lib/report-store";
 import { BookOpen, RefreshCw, Copy, Check, Baby } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ParsedData } from "@/lib/data-processing";
@@ -13,7 +13,7 @@ interface StoryDashboardProps {
 }
 
 export default function StoryDashboard({ data, charts, summaryText }: StoryDashboardProps) {
-  const [story, setStory] = useState("");
+  const [story, setStory] = useState(() => reportStore.story || "");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [eli10, setEli10] = useState(false);

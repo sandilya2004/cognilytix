@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { setReportStore } from "@/lib/report-store";
+import { reportStore, setReportStore } from "@/lib/report-store";
 import { TrendingUp, RefreshCw, Brain, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ParsedData } from "@/lib/data-processing";
@@ -31,8 +31,8 @@ interface Prediction {
 }
 
 export default function PredictionPanel({ data }: PredictionPanelProps) {
-  const [predictions, setPredictions] = useState<Prediction[]>([]);
-  const [aiInsight, setAiInsight] = useState("");
+  const [predictions, setPredictions] = useState<Prediction[]>(() => reportStore.predictionDetails || []);
+  const [aiInsight, setAiInsight] = useState(() => reportStore.predictionAI || "");
   const [loading, setLoading] = useState(false);
 
   const generatePredictions = async () => {
@@ -86,6 +86,7 @@ export default function PredictionPanel({ data }: PredictionPanelProps) {
 
       setPredictions(localPredictions);
       setReportStore({
+        predictionDetails: localPredictions,
         predictions: localPredictions.map(p =>
           `${p.column}: current avg ${p.currentAvg}, forecast ${p.predictedAvg} (${p.changePercent > 0 ? "+" : ""}${p.changePercent}%). ${p.recommendation}`),
       });

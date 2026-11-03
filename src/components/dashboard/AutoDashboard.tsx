@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { reportStore, setReportStore } from "@/lib/report-store";
 import { Palette, Shuffle, Plus, X, Hash, Maximize2 } from "lucide-react";
 import { TrendingUp, DollarSign, Award, MapPin, Package, FileDown } from "lucide-react";
 import VisualPicker from "@/components/dashboard/VisualPicker";
@@ -79,15 +80,17 @@ function aggregateBy(rows: Record<string, unknown>[], groupKey: string, valueKey
 
 export default function AutoDashboard({ data, allowCustomCharts = true, datasetNotice }: Props) {
   const cols = useMemo(() => detectColumns(data), [data]);
-  const [filters, setFilters] = useState<Record<string, string>>({});
+  const saved = allowCustomCharts ? reportStore.automaticDashboard : undefined;
+  const [filters, setFilters] = useState<Record<string, string>>(() => saved?.filters || {});
   // A fresh palette is picked automatically each time a dashboard is created
-  const [paletteName, setPaletteName] = useState(() => PALETTE_NAMES[Math.floor(Math.random() * PALETTE_NAMES.length)]);
-  const [chartCount, setChartCount] = useState(5);
-  const [layout, setLayout] = useState<Layout>("sidebar");
+  const [paletteName, setPaletteName] = useState(() => saved?.paletteName || PALETTE_NAMES[Math.floor(Math.random() * PALETTE_NAMES.length)]);
+  const [chartCount, setChartCount] = useState(() => saved?.chartCount || 5);
+  const [layout, setLayout] = useState<Layout>(() => saved?.layout || "sidebar");
   const [showBuilder, setShowBuilder] = useState(false);
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [pendingType, setPendingType] = useState<ChartType | null>(null);
-  const [customSpecs, setCustomSpecs] = useState<{ id: string; x: string[]; y: string[]; type: ChartType }[]>([]);
+  const [customSpecs, setCustomSpecs] = useState<{ id: string; x: string[]; y: string[]; type: ChartType }[]>(() => saved?.customSpecs || []);
+  useEffect(() => { if (allowCustomCharts) setReportStore({ automaticDashboard: { filters, paletteName, chartCount, layout, customSpecs } }); }, [allowCustomCharts, filters, paletteName, chartCount, layout, customSpecs]);
   const P = PALETTES[paletteName];
 
   const filteredRows = useMemo(() => {
