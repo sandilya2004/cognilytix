@@ -71,9 +71,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .select("role")
         .eq("user_id", userId)
         .maybeSingle();
-      if (error) throw error;
       if (currentUser.current !== userId) return;
-      setRole((data?.role as AppRole) ?? "user");
+      setRole(error ? "user" : (data?.role as AppRole) ?? "user");
     } catch {
       if (currentUser.current !== userId) return;
       setRestoreError(true);
