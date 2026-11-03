@@ -43,6 +43,13 @@
       "when": 1793593228941,
       "tag": "0005_lock_customer_story_direct_access",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793691096630,
+      "tag": "0006_account_workspace_saves",
+      "breakpoints": true
     }
   ]
 }
