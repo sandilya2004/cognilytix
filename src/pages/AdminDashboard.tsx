@@ -190,8 +190,7 @@ export default function AdminDashboard() {
   };
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate("/auth", { replace: true });
+    if (await signOut()) navigate("/auth", { replace: true });
   };
 
   const filtered = useMemo(() => {

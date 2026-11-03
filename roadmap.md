@@ -15,3 +15,5 @@
 - [x] Add the uploaded guide download below business questions.
 - [x] Add optional comments with required name, email and description; publish stories without emails.
 - [x] Verify guide downloads, comment validation and saved Customer Stories.
+- [x] Confirm sign-out, save account-owned work, and restore it on next sign-in.
+- [x] Verify cancellation, failed saves, account isolation, and saved report restoration.

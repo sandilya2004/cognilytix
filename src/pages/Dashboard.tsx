@@ -27,10 +27,11 @@ import type { ChartConfig, ChartType } from "@/lib/chart-types";
 import { interpretPrompt } from "@/lib/local-ai";
 import { generateSummary } from "@/lib/summarize";
 import { toast } from "sonner";
-import { getProjects, saveProjects, type Project } from "@/pages/Projects";
+import { getProjects, saveProjects, getFolders, saveFolders, type Project } from "@/pages/Projects";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
-import { clearReportStore } from "@/lib/report-store";
+import { clearReportStore, reportStore, setReportStore } from "@/lib/report-store";
+import { getWorkspaceDraft, setWorkspaceDraft, registerWorkspaceCapture, saveWorkspace } from "@/lib/workspace";
 import {
   DndContext,
   closestCenter,
@@ -94,6 +95,10 @@ export default function Dashboard() {
     return false;
   });
   const [pendingChartType, setPendingChartType] = useState<ChartType | null>(null);
+  const savedProjectId = useRef<string | null>(null);
+  const snapshotWorkspace = () => ({ charts, summaryText, fileName, data, aiResponse, chatMessages, activeTab, selectedSheet, slicerFilters: Object.fromEntries(Object.entries(slicerFilters).map(([key, values]) => [key, [...values]])), report: { ...reportStore } });
+  useEffect(() => registerWorkspaceCapture(() => setWorkspaceDraft(snapshotWorkspace())));
+  useEffect(() => () => { setWorkspaceDraft(snapshotWorkspace()); });
 
   useEffect(() => {
     if (activeTab === "dashboard") setToolsOpen(true);
@@ -139,15 +144,23 @@ export default function Dashboard() {
   // Restore saved project on mount (fix: was useState, now useEffect)
   useEffect(() => {
     const projectId = searchParams.get("project");
-    if (!projectId) return;
     try {
-      const saved = localStorage.getItem(`cognilytix_project_${projectId}`);
-      if (!saved) return;
-      const parsed = JSON.parse(saved);
+      const saved = projectId ? localStorage.getItem(`cognilytix_project_${projectId}`) : null;
+      const parsed = saved ? JSON.parse(saved) : (!projectId ? getWorkspaceDraft() : null);
+      if (!parsed) return;
+      savedProjectId.current = projectId;
+      clearReportStore();
+      if (parsed.report) setReportStore(parsed.report);
+      setDatasetVersion(version => version + 1);
       if (parsed.charts) setCharts(parsed.charts);
       if (parsed.summaryText) setSummaryText(parsed.summaryText);
       if (parsed.fileName) setFileName(parsed.fileName);
       if (parsed.data) { setData(parsed.data); setActiveTab("dashboard"); }
+      if (parsed.aiResponse) setAiResponse(parsed.aiResponse);
+      if (parsed.chatMessages) setChatMessages(parsed.chatMessages);
+      if (parsed.activeTab) setActiveTab(parsed.activeTab);
+      if (parsed.selectedSheet) setSelectedSheet(parsed.selectedSheet);
+      if (parsed.slicerFilters) setSlicerFilters(Object.fromEntries(Object.entries(parsed.slicerFilters).map(([key, values]) => [key, new Set(values as string[])])));
     } catch { /* ignore */ }
   }, [searchParams]);
 
@@ -362,10 +375,19 @@ export default function Dashboard() {
     );
   }, [data, slicerFilters]);
 
-  const handleSaveProject = () => {
+  const handleSaveProject = async () => {
     if (!data) { toast.error("Upload data first."); return; }
-    const projectId = searchParams.get("project") || crypto.randomUUID();
-    const folderId = searchParams.get("folder") || "";
+    if (!user) return;
+    try {
+    const projectId = searchParams.get("project") || savedProjectId.current || crypto.randomUUID();
+    savedProjectId.current = projectId;
+    let folderId = searchParams.get("folder") || "";
+    if (!folderId) {
+      const folders = getFolders();
+      const savedFolder = folders.find(folder => folder.name === "Saved Reports");
+      folderId = savedFolder?.id || crypto.randomUUID();
+      if (!savedFolder) saveFolders([{ id: folderId, name: "Saved Reports", createdAt: new Date().toISOString() }, ...folders]);
+    }
     const num = parseInt(searchParams.get("num") || "0", 10);
     const projects = getProjects();
     const existing = projects.findIndex(p => p.id === projectId);
@@ -379,8 +401,10 @@ export default function Dashboard() {
     if (existing >= 0) projects[existing] = project;
     else projects.unshift(project);
     saveProjects(projects);
-    localStorage.setItem(`cognilytix_project_${projectId}`, JSON.stringify({ charts, summaryText, fileName, data }));
-    toast.success("Project saved!");
+    localStorage.setItem(`cognilytix_project_${projectId}`, JSON.stringify(snapshotWorkspace()));
+    await saveWorkspace(user.id);
+    toast.success("Project saved to your account!");
+    } catch { toast.error("Could not save to your account. Please try again."); }
   };
 
   // DnD sensors
@@ -436,7 +460,7 @@ export default function Dashboard() {
                 summaryText={summaryText}
               />
             )}
-            <Button variant="ghost" size="sm" onClick={async () => { await signOut(); navigate("/auth"); }} title={user?.email ?? "Sign out"}>
+            <Button variant="ghost" size="sm" onClick={async () => { if (await signOut()) navigate("/auth"); }} title={user?.email ?? "Sign out"}>
               <LogOut className="h-4 w-4 mr-1" /> Sign out
             </Button>
           </div>

@@ -21,7 +21,7 @@ const faqs = [
   },
   {
     question: "Where is my uploaded data stored?",
-    answer: "Your uploaded file is read and processed in your browser. Saved projects stay in that browser on that device. Creating a shared report stores a report snapshot in your account. AI features send a limited excerpt for processing, as explained below.",
+    answer: "Your uploaded file is read and processed in your browser. Save or Continue at sign-out stores parsed data and report results in your account so they load after sign-in. Creating a shared report also stores a report snapshot in your account. AI features send a limited excerpt for processing, as explained below.",
   },
   {
     question: "What data is used for AI analysis?",
@@ -37,7 +37,7 @@ const faqs = [
   },
   {
     question: "How can I remove my data?",
-    answer: "Reset clears the current file from the dashboard. Delete saved projects on the Projects page and shared reports on the Reports page. Clearing your browser data also removes locally saved projects. Expired share links stop opening, but their stored snapshots are not automatically deleted. Account deletion procedures and provider retention terms require owner confirmation in the Privacy Policy.",
+    answer: "Reset clears the current file from the dashboard. Delete saved projects on the Projects page and shared reports on the Reports page. Continue at sign-out saves project changes to your account. Clearing browser data does not delete account-saved reports. Expired share links stop opening, but their stored snapshots are not automatically deleted. Account deletion procedures and provider retention terms require owner confirmation in the Privacy Policy.",
   },
   {
     question: "How do payments, taxes and refunds work?",

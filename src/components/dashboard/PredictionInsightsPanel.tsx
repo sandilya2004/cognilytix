@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { setReportStore } from "@/lib/report-store";
+import { reportStore, setReportStore } from "@/lib/report-store";
 import { TrendingUp, TrendingDown, Lightbulb, Sparkles, RefreshCw, Brain, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,7 +37,7 @@ const sections: {
 ];
 
 export default function PredictionInsightsPanel({ data }: PredictionInsightsPanelProps) {
-  const [insights, setInsights] = useState<Insights | null>(null);
+  const [insights, setInsights] = useState<Insights | null>(() => reportStore.predictionInsightDetails || null);
   const [loading, setLoading] = useState(false);
   const [explanation, setExplanation] = useState<{ key: string; text: string } | null>(null);
   const [explainLoading, setExplainLoading] = useState<string | null>(null);
@@ -128,6 +128,7 @@ export default function PredictionInsightsPanel({ data }: PredictionInsightsPane
           trends: resp.insights.trends || [],
         };
         setInsights(next);
+        setReportStore({ predictionInsightDetails: next });
         const flat = (a: InsightItem[]) => a.map((i) => `${i.title}: ${i.detail}`);
         setReportStore({ predictionInsights: { growth: flat(next.growth), risks: flat(next.risks), actions: flat(next.actions), trends: flat(next.trends) } });
         toast.success("Prediction insights ready!");

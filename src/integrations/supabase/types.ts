@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_workspaces: {
+        Row: {
+          snapshot: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          snapshot?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          snapshot?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           id: boolean

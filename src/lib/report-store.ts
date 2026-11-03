@@ -1,6 +1,9 @@
 // Shared, module-level store so tab panels can publish their generated results
 // and exports (PDF/PPT) can include them even when the tab is not visible.
 export interface ReportStore {
+  predictionDetails?: { column: string; currentAvg: number; predictedAvg: number; changePercent: number; trend: "up" | "down"; recommendation: string; forecastData: { period: string; actual?: number; predicted?: number }[] }[];
+  predictionInsightDetails?: { growth: { title: string; detail: string }[]; risks: { title: string; detail: string }[]; actions: { title: string; detail: string }[]; trends: { title: string; detail: string }[] };
+  automaticDashboard?: { filters: Record<string, string>; paletteName: string; chartCount: number; layout: "sidebar" | "grid" | "stacked"; customSpecs: { id: string; x: string[]; y: string[]; type: import("@/lib/chart-types").ChartType }[] };
   story?: string;
   predictions?: string[];
   predictionAI?: string;
