@@ -21,7 +21,7 @@ export function clearWorkspace() {
   capture = undefined;
 }
 
-export function setWorkspaceDraft(value: Record<string, unknown> | undefined) { draft = value; }
+export function setWorkspaceDraft(value: Record<string, unknown> | undefined) { if (readyOwner) draft = value; }
 export function getWorkspaceDraft() { return draft; }
 export function registerWorkspaceCapture(fn: () => void) {
   capture = fn;
