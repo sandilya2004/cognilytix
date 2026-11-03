@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { getWorkspaceDraft } from "@/lib/workspace";
+import { getProjects } from "@/pages/Projects";
 
 interface Row {
   id: string;
@@ -67,6 +69,12 @@ export default function Reports() {
       </header>
 
       <main className="container py-8 space-y-4">
+        <section className="space-y-3" aria-label="Saved reports">
+          <h1 className="text-2xl font-bold">Saved Reports</h1>
+          {getWorkspaceDraft()?.data && <Card><CardContent className="p-4 flex items-center justify-between gap-4"><p className="font-semibold">{String(getWorkspaceDraft()?.fileName || "Latest report")}</p><Button variant="outline" onClick={() => navigate("/dashboard")}>Open latest report</Button></CardContent></Card>}
+          {getProjects().map(project => <Card key={project.id}><CardContent className="p-4 flex items-center justify-between gap-4"><p className="font-semibold">{project.name}</p><Button variant="outline" onClick={() => navigate(`/dashboard?project=${project.id}`)}>Open report</Button></CardContent></Card>)}
+          {!getWorkspaceDraft()?.data && getProjects().length === 0 && <p className="text-sm text-muted-foreground">No saved reports yet.</p>}
+        </section>
         <div>
           <h1 className="text-2xl font-bold">Shared Reports</h1>
           <p className="text-sm text-muted-foreground">Every report you've shared via secure link.</p>

@@ -2,7 +2,7 @@ import LegalLayout, { OwnerConfirm, Section } from "@/components/legal/LegalLayo
 
 export default function Privacy() {
   return (
-    <LegalLayout title="Privacy Policy" updated="November 2, 2026">
+    <LegalLayout title="Privacy Policy" updated="November 3, 2026">
       <Section title="Who we are">
         <p>
           Cognilytix AI ("the service") is a web application for analysing spreadsheet data.{" "}
@@ -24,7 +24,7 @@ export default function Privacy() {
       <Section title="Files you upload">
         <p>
           CSV and Excel files are read and processed inside your browser. The full file is not uploaded to our servers
-          when you analyse it.
+          when you analyse it. Saving a project or choosing Continue when signing out stores the parsed dataset and report results in your account.
         </p>
         <ul className="list-disc pl-5 space-y-1">
           <li>
@@ -35,8 +35,7 @@ export default function Privacy() {
             <OwnerConfirm>names of the AI providers and their data-retention terms</OwnerConfirm>
           </li>
           <li>
-            <strong>Saved projects</strong> (Save / Ctrl+S) are stored in your own browser's local storage on that
-            device, not on our servers.
+            <strong>Saved projects</strong> (Save / Ctrl+S) and work saved when you confirm sign-out are stored in your account, including parsed rows, charts, questions and generated report content. A browser copy is used while you work and cleared on sign-out. Your saved work loads when you sign in to the same account again.
           </li>
           <li>
             <strong>Shared reports</strong>: when you create a share link, a snapshot of that report (titles, charts,
@@ -49,6 +48,7 @@ export default function Privacy() {
       <Section title="Retention and deletion">
         <ul className="list-disc pl-5 space-y-1">
           <li>Data held in your browser stays until you delete the project, clear your browser data, or press Reset.</li>
+          <li>Account-saved projects remain until removed on the Projects page and the changes are saved. Reset clears the current workspace; saving or confirming sign-out updates its account copy.</li>
           <li>Shared reports stay until you delete them on the Reports page. Expired links stop opening, but the stored snapshot is not automatically removed. <OwnerConfirm>whether expired reports should be purged and on what schedule</OwnerConfirm></li>
           <li>Account data stays while your account exists. An administrator can delete accounts. <OwnerConfirm>how users request account deletion and how long backups are kept</OwnerConfirm></li>
           <li>AI request excerpts are not stored in our database by the app. <OwnerConfirm>how long AI providers and server logs retain request content</OwnerConfirm></li>
@@ -71,7 +71,7 @@ export default function Privacy() {
       <Section title="Your choices and rights">
         <p>
           You can avoid AI features if you do not want excerpts sent for processing, delete shared reports, and clear
-          saved projects from your browser. <OwnerConfirm>applicable privacy laws, user rights, and how to exercise them</OwnerConfirm>
+          saved projects from your account on the Projects page. <OwnerConfirm>applicable privacy laws, user rights, and how to exercise them</OwnerConfirm>
         </p>
       </Section>
 

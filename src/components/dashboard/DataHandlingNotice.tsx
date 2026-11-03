@@ -8,9 +8,9 @@ export default function DataHandlingNotice() {
         <ShieldCheck className="h-4 w-4 text-primary" /> How your data is handled
       </p>
       <ul className="list-disc pl-5 space-y-1">
-        <li><strong>Storage:</strong> your file is read in this browser. Saved projects stay in this browser only. Shared reports are stored in your account.</li>
+        <li><strong>Storage:</strong> your file is read in this browser. Save or Continue at sign-out stores parsed data and report results in your account for restoration after sign-in. Shared reports are also stored in your account.</li>
         <li><strong>AI processing:</strong> AI features send column names, summary figures, a few sample rows and your questions to an AI provider — not the whole file.</li>
-        <li><strong>Retention:</strong> browser data stays until you delete it; shared reports stay until you delete them.</li>
+        <li><strong>Retention:</strong> account-saved work stays until you remove it; the working browser copy is cleared on sign-out. Shared reports stay until you delete them.</li>
         <li><strong>Deletion:</strong> use Reset to clear the current file, delete projects on the Projects page, and delete shared reports on the Reports page.</li>
       </ul>
       <p>
