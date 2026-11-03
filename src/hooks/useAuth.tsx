@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import SignOutConfirmation from "@/components/SignOutConfirmation";
@@ -6,17 +6,8 @@ import { clearWorkspace, restoreWorkspace, saveWorkspace, saveThenSignOut } from
 import { clearReportStore } from "@/lib/report-store";
 import { Button } from "@/components/ui/button";
 
-export type AppRole = "admin" | "user";
-
-interface AuthContextValue {
-  session: Session | null;
-  user: User | null;
-  role: AppRole | null;
-  loading: boolean;
-  signOut: () => Promise<boolean>;
-}
-
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+import { AuthContext, type AppRole } from "@/hooks/auth-context";
+export type { AppRole } from "@/hooks/auth-context";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);

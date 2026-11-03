@@ -1,5 +1,6 @@
 - Mirror generated story and prediction content in the shared report store so exports can include results from inactive tabs.
 - Persist private workspace snapshots in account_workspaces with owner-only RLS; AuthProvider restores before protected pages mount and centrally confirms save-before-sign-out, so cancellations/errors preserve the session and browser work cannot cross accounts.
+- Define auth context identity in a non-component module so provider hot reloads cannot disconnect existing hook consumers.
 - Homepage customer stories use validated submission and bounded public-read functions; never expose email or direct visitor table reads, because comments are public but contact details are private.
 - Pass exact full-dataset aggregates separately from sample rows to executive-summary generation so reports do not mistake samples for totals.
 - Keep dashboard navigation and sheet selection in the dashboard shell; reuse compact visualization and axis controls in its right sidebar so chart creation has one stateful builder.
