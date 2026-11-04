@@ -20,15 +20,19 @@ import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Refunds from "./pages/Refunds";
 import Subscription from "./pages/Subscription";
+import { HelmetProvider } from "react-helmet-async";
+import PageAddress from "./components/PageAddress";
 
 const queryClient = new QueryClient();
 
 const App = () => (
+  <HelmetProvider>
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <PageAddress />
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
@@ -87,6 +91,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
+  </HelmetProvider>
 );
 
 export default App;
