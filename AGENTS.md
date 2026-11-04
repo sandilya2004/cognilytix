@@ -2,7 +2,7 @@
 - Persist private workspace snapshots in account_workspaces with owner-only RLS; AuthProvider restores before protected pages mount and centrally confirms save-before-sign-out, so cancellations/errors preserve the session and browser work cannot cross accounts.
 - Define auth context identity in a non-component module so provider hot reloads cannot disconnect existing hook consumers.
 - Shared report theme controls use the existing cognilytix_dark browser preference and root dark class so public report charts and page tokens stay consistent with other pages.
-- PageAddress owns route-specific canonical and og:url through Helmet; keep static canonical out of index.html to avoid duplicate tags and attributing public pages to the homepage.
+- PageAddress owns route-specific canonical, og:url, and robots through the pure seo-policy allowlist; keep static canonical out of index.html and noindex all non-public routes to avoid duplicate tags and indexing private reports. Hosting owns domain redirects; do not add client redirects or unsupported hosting configuration files.
 - Homepage customer stories use validated submission and bounded public-read functions; never expose email or direct visitor table reads, because comments are public but contact details are private.
 - Pass exact full-dataset aggregates separately from sample rows to executive-summary generation so reports do not mistake samples for totals.
 - Keep dashboard navigation and sheet selection in the dashboard shell; reuse compact visualization and axis controls in its right sidebar so chart creation has one stateful builder.
