@@ -20,3 +20,5 @@
 - [x] Normalize public canonical addresses and exclude private pages from indexing without changing the app.
 - [x] Verify hosting redirects, sitemap, robots.txt, and rendered page metadata; report any hosting limitations.
 - [ ] Change www hosting redirect from 302 to permanent 301 (blocked: hosting-controlled status has no available adjustment tool; primary non-www domain is already configured).
+- [x] Prepare Capacitor for iPhone and Android alongside the existing website, with local setup instructions.
+- [ ] Build, test and submit native apps (requires the user's local platform tools, signing/developer accounts and device checks; Google login and store subscription compliance remain unverified).
