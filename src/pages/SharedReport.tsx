@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { Lock, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -138,7 +138,9 @@ export default function SharedReport() {
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container flex h-14 items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Cognilytix AI logo" className="h-6 w-6" />
+            <Link to="/" className="flex items-center gap-2" title="Home" aria-label="Cognilytix AI home">
+              <img src="/logo.png" alt="Cognilytix AI logo" className="h-6 w-6" />
+            </Link>
             <div>
               <p className="text-sm font-semibold leading-tight">{row.title}</p>
               <p className="text-[11px] text-muted-foreground">Shared report · {row.snapshot.fileName}</p>
