@@ -51,7 +51,6 @@ export default function Demo() {
           <Link to="/" className="flex items-center gap-2 font-semibold"><img src="/logo.png" alt="Cognilytix AI logo" className="h-7 w-7" /> Cognilytix AI</Link>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" aria-label={dark ? "Switch to light mode" : "Switch to dark mode"} title="Toggle theme" onClick={() => setDark(value => !value)}>{dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</Button>
-            <Button variant="ghost" size="sm" asChild><Link to="/">Home</Link></Button>
             <Button variant="outline" size="sm" asChild><Link to="/pricing">Pricing & FAQ</Link></Button>
           </div>
         </div>

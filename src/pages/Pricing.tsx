@@ -83,7 +83,6 @@ export default function Pricing() {
             <img src="/logo.png" alt="Cognilytix AI logo" className="h-8 w-8 shrink-0" /> Cognilytix AI
           </Link>
           <div className="flex items-center gap-1 sm:gap-2">
-            <Button variant="ghost" size="sm" asChild><Link to="/">Home</Link></Button>
             <Button variant="ghost" size="icon" aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"} title={darkMode ? "Switch to light mode" : "Switch to dark mode"} onClick={() => setDarkMode(mode => !mode)}>
               {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>

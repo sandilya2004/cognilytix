@@ -29,9 +29,6 @@ export default function LegalLayout({ title, updated, children }: { title: strin
             <img src="/logo.png" alt="Cognilytix AI logo" className="h-6 w-6" />
             <span className="font-semibold text-foreground">Cognilytix AI</span>
           </Link>
-          <Link to="/" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" /> Home
-          </Link>
         </div>
       </nav>
       <main className="container max-w-3xl py-10 space-y-8">
