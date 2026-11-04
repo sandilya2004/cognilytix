@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Lock, Loader2 } from "lucide-react";
+import { Lock, Loader2, Moon, Sun } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ interface Row {
 
 export default function SharedReport() {
   const { id } = useParams<{ id: string }>();
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("cognilytix_dark") === "true");
   const [row, setRow] = useState<Row | null>(null);
   const [lockedTitle, setLockedTitle] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,6 +33,24 @@ export default function SharedReport() {
   const [needsPassword, setNeedsPassword] = useState(false);
   const [password, setPassword] = useState("");
   const [unlocked, setUnlocked] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", darkMode);
+    localStorage.setItem("cognilytix_dark", String(darkMode));
+  }, [darkMode]);
+
+  const themeToggle = (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="shrink-0"
+      aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+      title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+      onClick={() => setDarkMode(mode => !mode)}
+    >
+      {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+    </Button>
+  );
 
   const fetchReport = async (pwd?: string) => {
     const { data, error } = await supabase.functions.invoke("get-shared-report", {
@@ -80,7 +99,8 @@ export default function SharedReport() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-muted-foreground">
+      <div className="flex min-h-screen items-center justify-center bg-background text-muted-foreground">
+        <div className="fixed right-4 top-3">{themeToggle}</div>
         <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading report…
       </div>
     );
@@ -88,7 +108,8 @@ export default function SharedReport() {
 
   if (error && !row && !needsPassword) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-6">
+      <div className="flex min-h-screen items-center justify-center bg-background text-foreground p-6">
+        <div className="fixed right-4 top-3">{themeToggle}</div>
         <Card className="max-w-md w-full">
           <CardContent className="p-8 text-center space-y-3">
             <img src="/logo.png" alt="Cognilytix AI logo" className="h-10 w-10 mx-auto" />
@@ -102,7 +123,8 @@ export default function SharedReport() {
 
   if (needsPassword && !unlocked) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-6">
+      <div className="flex min-h-screen items-center justify-center bg-background text-foreground p-6">
+        <div className="fixed right-4 top-3">{themeToggle}</div>
         <Card className="max-w-md w-full">
           <CardContent className="p-8 space-y-4">
             <div className="text-center">
@@ -134,21 +156,24 @@ export default function SharedReport() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container flex h-14 items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="container flex min-h-14 items-center justify-between gap-3 py-2">
+          <div className="flex min-w-0 items-center gap-2">
             <Link to="/" className="flex items-center gap-2" title="Home" aria-label="Cognilytix AI home">
               <img src="/logo.png" alt="Cognilytix AI logo" className="h-6 w-6" />
             </Link>
-            <div>
-              <p className="text-sm font-semibold leading-tight">{row.title}</p>
-              <p className="text-[11px] text-muted-foreground">Shared report · {row.snapshot.fileName}</p>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold leading-tight break-words">{row.title}</p>
+              <p className="text-[11px] text-muted-foreground break-words">Shared report · {row.snapshot.fileName}</p>
             </div>
           </div>
-          <span className="text-[10px] uppercase tracking-wide text-muted-foreground border rounded px-2 py-1">
-            {row.permission}
-          </span>
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground border rounded px-2 py-1">
+              {row.permission}
+            </span>
+            {themeToggle}
+          </div>
         </div>
       </header>
       <main className="container py-6">
