@@ -1,14 +1,16 @@
 import { Helmet } from "react-helmet-async";
 import { useLocation } from "react-router-dom";
+import { getPageSearchPolicy } from "@/lib/seo-policy";
 
 export default function PageAddress() {
   const { pathname } = useLocation();
-  const url = `https://cognilytix.app${pathname}`;
+  const { canonical, robots } = getPageSearchPolicy(pathname);
 
   return (
     <Helmet>
-      <link rel="canonical" href={url} />
-      <meta property="og:url" content={url} />
+      {canonical && <link rel="canonical" href={canonical} />}
+      {canonical && <meta property="og:url" content={canonical} />}
+      <meta name="robots" content={robots} />
     </Helmet>
   );
 }
