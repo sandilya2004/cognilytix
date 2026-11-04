@@ -17,5 +17,6 @@
 - [x] Verify guide downloads, comment validation and saved Customer Stories.
 - [x] Confirm sign-out, save account-owned work, and restore it on next sign-in.
 - [x] Verify cancellation, failed saves, account isolation, and saved report restoration.
-- [ ] Normalize public canonical addresses and exclude private pages from indexing without changing the app.
-- [ ] Verify hosting redirects, sitemap, robots.txt, and rendered page metadata; report any hosting limitations.
+- [x] Normalize public canonical addresses and exclude private pages from indexing without changing the app.
+- [x] Verify hosting redirects, sitemap, robots.txt, and rendered page metadata; report any hosting limitations.
+- [ ] Change www hosting redirect from 302 to permanent 301 (blocked: hosting-controlled status has no available adjustment tool; primary non-www domain is already configured).
