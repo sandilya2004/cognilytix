@@ -1,7 +1,7 @@
 import SubscriptionAdmin from "@/components/admin/SubscriptionAdmin";
 import { CreditCard } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Users, Shield, LogOut, Moon, Sun, BarChart3, Search, Trash2,
   AlertTriangle, LayoutDashboard, Inbox, Activity, Settings as SettingsIcon,
@@ -220,11 +220,13 @@ export default function AdminDashboard() {
       {/* SIDEBAR */}
       <aside className="w-60 shrink-0 border-r border-border bg-card flex flex-col sticky top-0 h-screen">
         <div className="h-16 flex items-center gap-2 px-5 border-b border-border">
-          <img src="/logo.png" alt="Cognilytix AI logo" className="h-8 w-8" />
-          <div>
-            <p className="text-sm font-bold leading-none">Cognilytix</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Admin Console</p>
-          </div>
+          <Link to="/" className="flex items-center gap-2" title="Home" aria-label="Cognilytix AI home">
+            <img src="/logo.png" alt="Cognilytix AI logo" className="h-8 w-8" />
+            <div>
+              <p className="text-sm font-bold leading-none">Cognilytix</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Admin Console</p>
+            </div>
+          </Link>
         </div>
         <nav className="flex-1 p-3 space-y-1">
           {NAV_ITEMS.map(item => {

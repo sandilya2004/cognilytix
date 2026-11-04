@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard, BookOpen, TrendingUp, Moon, Sun, Sparkles, LogOut, Wand2, FileText, Home, Menu, ChevronDown, ChevronRight, PanelRightClose, PanelRightOpen, Database, Layers, ArrowRight, X } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { FolderOpen, Save, Upload, Eye, HeartPulse, Lightbulb, LayoutDashboard, BookOpen, TrendingUp, Moon, Sun, Sparkles, LogOut, Wand2, FileText, Menu, ChevronDown, ChevronRight, PanelRightClose, PanelRightOpen, Database, Layers, ArrowRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import ReportActions from "@/components/dashboard/ReportActions";
@@ -429,15 +429,14 @@ export default function Dashboard() {
             <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" aria-label="Toggle navigation" aria-expanded={navigationOpen} aria-controls="workspace-navigation" onClick={() => setNavigationOpen(v => !v)}>
               <Menu className="h-4 w-4" />
             </Button>
-            <img src="/logo.png" alt="Cognilytix AI logo" className="h-7 w-7" />
-            <span className="font-semibold text-foreground">Cognilytix AI</span>
+            <Link to="/" className="flex items-center gap-2" title="Home" aria-label="Cognilytix AI home">
+              <img src="/logo.png" alt="Cognilytix AI logo" className="h-7 w-7" />
+              <span className="font-semibold text-foreground">Cognilytix AI</span>
+            </Link>
           </div>
           <div className="flex items-center gap-1 flex-wrap min-w-0">
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDarkMode(mode => !mode)} aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"} title={darkMode ? "Switch to light mode" : "Switch to dark mode"}>
               {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => navigate("/")} title="Home">
-              <Home className="h-4 w-4 mr-1" /> Home
             </Button>
             <Button variant="ghost" size="sm" onClick={() => navigate("/projects")}>
               <FolderOpen className="h-4 w-4 mr-1" /> Projects

@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 
 export function OwnerConfirm({ children }: { children: ReactNode }) {
   return (
@@ -28,9 +28,6 @@ export default function LegalLayout({ title, updated, children }: { title: strin
           <Link to="/" className="flex items-center gap-2">
             <img src="/logo.png" alt="Cognilytix AI logo" className="h-6 w-6" />
             <span className="font-semibold text-foreground">Cognilytix AI</span>
-          </Link>
-          <Link to="/" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" /> Home
           </Link>
         </div>
       </nav>

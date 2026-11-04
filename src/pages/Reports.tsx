@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Trash2, ExternalLink, Copy, FileText, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -60,10 +60,9 @@ export default function Reports() {
             <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
               <ArrowLeft className="h-4 w-4 mr-1" /> Back
             </Button>
-            <div className="flex items-center gap-2">
+            <Link to="/" className="flex items-center gap-2" title="Home" aria-label="Cognilytix AI home">
               <img src="/logo.png" alt="Cognilytix AI logo" className="h-6 w-6" />
-              <span className="font-semibold">Report History</span>
-            </div>
+            </Link>
           </div>
         </div>
       </header>
