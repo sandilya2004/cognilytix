@@ -173,7 +173,6 @@ export default function Pricing() {
         <div className="container flex flex-col justify-between gap-4 text-sm sm:flex-row">
           <p className="text-muted-foreground">© {new Date().getFullYear()} Cognilytix AI</p>
           <div className="flex flex-wrap gap-5">
-            <Link to="/" className="text-muted-foreground hover:text-foreground">Home</Link>
             <Link to="/privacy" className="text-muted-foreground hover:text-foreground">Privacy Policy</Link>
             <Link to="/terms" className="text-muted-foreground hover:text-foreground">Terms of Service</Link>
             <Link to="/refunds" className="text-muted-foreground hover:text-foreground">Refund Policy</Link>
